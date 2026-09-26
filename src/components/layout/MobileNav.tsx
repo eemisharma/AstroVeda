@@ -27,42 +27,46 @@ export default function MobileNav() {
       <div className="grid grid-cols-4 items-center max-w-md mx-auto">
         <Link
           href="/"
-          className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all ${
+          className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all active:scale-90 ${
             pathname === '/' ? 'text-gold-400 font-semibold' : 'text-gray-400 hover:text-gray-200'
           }`}
         >
-          <Home className="w-5 h-5 mb-0.5" />
+          <Home className={`w-5 h-5 mb-0.5 transition-transform ${pathname === '/' ? 'scale-110 drop-shadow-[0_0_8px_rgba(229,184,66,0.6)]' : ''}`} />
           <span className="text-[11px] leading-tight">{t('navHome')}</span>
+          {pathname === '/' && <span className="w-1.5 h-1.5 rounded-full bg-gold-400 mt-0.5 animate-pulse shadow-gold-glow" />}
         </Link>
 
         <Link
           href="/services"
-          className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all ${
+          className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all active:scale-90 ${
             pathname.startsWith('/services') ? 'text-gold-400 font-semibold' : 'text-gray-400 hover:text-gray-200'
           }`}
         >
-          <Compass className="w-5 h-5 mb-0.5" />
+          <Compass className={`w-5 h-5 mb-0.5 transition-transform ${pathname.startsWith('/services') ? 'scale-110 drop-shadow-[0_0_8px_rgba(229,184,66,0.6)]' : ''}`} />
           <span className="text-[11px] leading-tight">{t('navServices')}</span>
+          {pathname.startsWith('/services') && <span className="w-1.5 h-1.5 rounded-full bg-gold-400 mt-0.5 animate-pulse shadow-gold-glow" />}
         </Link>
 
         <Link
           href={isAuth ? '/dashboard/orders' : '/login'}
-          className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all ${
+          className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all active:scale-90 ${
             pathname.startsWith('/dashboard/orders') ? 'text-gold-400 font-semibold' : 'text-gray-400 hover:text-gray-200'
           }`}
         >
-          <FileText className="w-5 h-5 mb-0.5" />
+          <FileText className={`w-5 h-5 mb-0.5 transition-transform ${pathname.startsWith('/dashboard/orders') ? 'scale-110 drop-shadow-[0_0_8px_rgba(229,184,66,0.6)]' : ''}`} />
           <span className="text-[11px] leading-tight">{t('navReports')}</span>
+          {pathname.startsWith('/dashboard/orders') && <span className="w-1.5 h-1.5 rounded-full bg-gold-400 mt-0.5 animate-pulse shadow-gold-glow" />}
         </Link>
 
         <Link
           href={isAuth ? '/dashboard' : '/login'}
-          className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all ${
+          className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all active:scale-90 ${
             pathname === '/dashboard' || pathname === '/login' ? 'text-gold-400 font-semibold' : 'text-gray-400 hover:text-gray-200'
           }`}
         >
-          <User className="w-5 h-5 mb-0.5" />
+          <User className={`w-5 h-5 mb-0.5 transition-transform ${pathname === '/dashboard' || pathname === '/login' ? 'scale-110 drop-shadow-[0_0_8px_rgba(229,184,66,0.6)]' : ''}`} />
           <span className="text-[11px] leading-tight">{isAuth ? t('navDashboard') : t('signIn')}</span>
+          {(pathname === '/dashboard' || pathname === '/login') && <span className="w-1.5 h-1.5 rounded-full bg-gold-400 mt-0.5 animate-pulse shadow-gold-glow" />}
         </Link>
       </div>
     </nav>

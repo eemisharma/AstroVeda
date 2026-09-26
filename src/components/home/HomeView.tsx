@@ -25,6 +25,8 @@ import { FALLBACK_SERVICES } from '@/lib/constants/services';
 import CustomerCareDrawer from '@/components/customer-care/CustomerCareDrawer';
 import { useState, useRef, useEffect } from 'react';
 import { Heart, Briefcase, Activity, Headphones, Shield } from 'lucide-react';
+import ScrollReveal from '@/components/common/ScrollReveal';
+import LiveActivityTicker from '@/components/home/LiveActivityTicker';
 
 interface HomeViewProps {
   services?: any[];
@@ -157,16 +159,30 @@ export default function HomeView({ services }: HomeViewProps) {
 
   return (
     <div className="flex flex-col min-h-screen bg-navy-950 overflow-hidden">
+      {/* Live Astrological Consultations Ticker */}
+      <LiveActivityTicker />
+
       {/* 1. HERO SECTION */}
-      <section className="relative pt-12 pb-20 md:pt-20 md:pb-32 px-4 sm:px-6">
+      <section className="relative pt-10 pb-16 md:pt-16 md:pb-28 px-4 sm:px-6">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[600px] overflow-hidden pointer-events-none">
           <div className="absolute top-[-150px] left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-gradient-to-b from-gold-500/10 via-mystic-500/10 to-transparent blur-3xl rounded-full" />
           <div className="absolute top-[80px] left-1/4 w-[350px] h-[350px] bg-mystic-600/10 blur-3xl rounded-full" />
           <div className="absolute top-[120px] right-1/4 w-[300px] h-[300px] bg-gold-400/10 blur-3xl rounded-full" />
+
+          {/* Rotating Cosmic Astrolabe Ring Background Accent */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] opacity-15 pointer-events-none">
+            <svg className="w-full h-full animate-spin-slow" viewBox="0 0 100 100" fill="none">
+              <circle cx="50" cy="50" r="48" stroke="#e5b842" strokeWidth="0.8" strokeDasharray="3 3" />
+              <circle cx="50" cy="50" r="38" stroke="#e5b842" strokeWidth="0.6" />
+              <polygon points="50,14 81,68 19,68" stroke="#e5b842" strokeWidth="0.8" />
+              <polygon points="50,86 81,32 19,32" stroke="#e5b842" strokeWidth="0.8" />
+              <circle cx="50" cy="50" r="8" stroke="#e5b842" strokeWidth="0.6" />
+            </svg>
+          </div>
         </div>
 
-        <div className="relative max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-navy-900/90 border border-gold-500/30 text-gold-300 text-xs font-semibold mb-6 shadow-gold-glow backdrop-blur-md">
+        <ScrollReveal direction="up" className="relative max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-navy-900/90 border border-gold-500/30 text-gold-300 text-xs font-semibold mb-6 shadow-gold-glow backdrop-blur-md animate-pulse-ring">
             <Sparkles className="w-3.5 h-3.5 text-gold-400" />
             <span>{t('heroBadge')}</span>
           </div>
@@ -192,7 +208,7 @@ export default function HomeView({ services }: HomeViewProps) {
                   <button
                     type="button"
                     onClick={() => setDropdownOpen((prev) => !prev)}
-                    className="flex-1 px-5 py-4 text-navy-950 font-bold text-base hover:brightness-110 flex items-center justify-center gap-2 transition-all text-left"
+                    className="flex-1 px-5 py-4 text-navy-950 font-bold text-base hover:brightness-110 flex items-center justify-center gap-2 transition-all text-left btn-interactive active:scale-95"
                     aria-expanded={dropdownOpen}
                     aria-haspopup="listbox"
                   >
@@ -213,7 +229,7 @@ export default function HomeView({ services }: HomeViewProps) {
                         ? '/services'
                         : `/checkout/${selectedService.slug}`
                     }
-                    className="px-4 py-4 bg-navy-950/20 hover:bg-navy-950/30 text-navy-950 flex items-center justify-center border-l border-navy-950/10 transition-colors"
+                    className="px-4 py-4 bg-navy-950/20 hover:bg-navy-950/30 text-navy-950 flex items-center justify-center border-l border-navy-950/10 transition-colors active:scale-90"
                     title={language === 'hi' ? 'सीधे चेकआउट पर जाएं' : 'Proceed directly to checkout'}
                   >
                     <ArrowRight className="w-5 h-5" />
@@ -224,7 +240,7 @@ export default function HomeView({ services }: HomeViewProps) {
               {/* Secondary CTA: View All Services */}
               <Link
                 href="/services"
-                className="px-6 py-4 rounded-xl bg-navy-900 border border-navy-700 hover:border-gold-500/40 text-gray-200 font-semibold text-base hover:bg-navy-850 flex items-center justify-center gap-2 transition-all whitespace-nowrap"
+                className="px-6 py-4 rounded-xl bg-navy-900 border border-navy-700 hover:border-gold-500/40 text-gray-200 font-semibold text-base hover:bg-navy-850 flex items-center justify-center gap-2 transition-all whitespace-nowrap btn-interactive active:scale-95"
               >
                 <span>{t('heroSecondaryCta')}</span>
               </Link>
@@ -387,13 +403,13 @@ export default function HomeView({ services }: HomeViewProps) {
               <div className="font-bold text-white text-sm sm:text-base">{t('badgeWhatsApp')}</div>
             </div>
           </div>
-        </div>
+        </ScrollReveal>
       </section>
 
       {/* 2. 4 CORE CONSULTATION CATEGORIES */}
       <section className="py-16 bg-navy-900/50 border-y border-navy-800/80 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
+          <ScrollReveal direction="up" className="text-center mb-12">
             <span className="text-xs font-bold text-gold-400 uppercase tracking-widest">
               {language === 'hi' ? 'विशेषज्ञ परामर्श एवं उपाय' : 'Core Consultation Areas'}
             </span>
@@ -403,10 +419,10 @@ export default function HomeView({ services }: HomeViewProps) {
             <p className="text-xs sm:text-sm text-gray-400 mt-2 max-w-xl mx-auto">
               {t('categorySectionSubtitle')}
             </p>
-          </div>
+          </ScrollReveal>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {CONSULTATION_CATEGORIES.map((cat) => {
+            {CONSULTATION_CATEGORIES.map((cat, catIdx) => {
               const IconComponent =
                 cat.id === 'love-relationship'
                   ? Heart
@@ -417,64 +433,68 @@ export default function HomeView({ services }: HomeViewProps) {
                   : Shield;
 
               return (
-                <div
+                <ScrollReveal
                   key={cat.id}
-                  className="bg-navy-900/90 border border-navy-700/70 hover:border-gold-500/40 rounded-3xl p-6 sm:p-7 flex flex-col justify-between transition-all group"
+                  direction="up"
+                  delay={catIdx * 100}
+                  className="h-full"
                 >
-                  <div>
-                    <div className="flex items-center gap-3.5 mb-3">
-                      <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${cat.color} flex items-center justify-center border shadow-sm`}>
-                        <IconComponent className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-white font-heading group-hover:text-gold-300 transition-colors">
-                          {language === 'hi' ? cat.nameHi : cat.nameEn}
-                        </h3>
-                        <span className="text-[11px] text-gray-400 block mt-0.5">
-                          {language === 'hi' ? cat.subtitleHi : cat.subtitleEn}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Suggested remedies tags */}
-                    <div className="mt-4 pt-3 border-t border-navy-800 space-y-2">
-                      <span className="text-[10px] uppercase font-bold text-gold-400 tracking-wider">
-                        {language === 'hi' ? 'अभिमंत्रित वैदिक उपाय उत्पाद:' : 'Consecrated Remedies:'}
-                      </span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {cat.suggestedProducts.map((p, pIdx) => (
-                          <span
-                            key={pIdx}
-                            className="text-[11px] px-2.5 py-1 rounded-lg bg-navy-950/80 border border-navy-700 text-gray-300 flex items-center gap-1"
-                          >
-                            <Sparkles className="w-2.5 h-2.5 text-gold-400" />
-                            <span>{language === 'hi' ? p.nameHi : p.nameEn}</span>
-                            <span className="text-gold-400 font-semibold font-mono ml-0.5">₹{p.price}</span>
+                  <div className="bg-navy-900/90 border border-navy-700/70 hover:border-gold-500/40 rounded-3xl p-6 sm:p-7 flex flex-col justify-between transition-all group card-interactive h-full shadow-lg">
+                    <div>
+                      <div className="flex items-center gap-3.5 mb-3">
+                        <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${cat.color} flex items-center justify-center border shadow-sm group-hover:scale-105 transition-transform`}>
+                          <IconComponent className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-white font-heading group-hover:text-gold-300 transition-colors">
+                            {language === 'hi' ? cat.nameHi : cat.nameEn}
+                          </h3>
+                          <span className="text-[11px] text-gray-400 block mt-0.5">
+                            {language === 'hi' ? cat.subtitleHi : cat.subtitleEn}
                           </span>
-                        ))}
+                        </div>
+                      </div>
+
+                      {/* Suggested remedies tags */}
+                      <div className="mt-4 pt-3 border-t border-navy-800 space-y-2">
+                        <span className="text-[10px] uppercase font-bold text-gold-400 tracking-wider">
+                          {language === 'hi' ? 'अभिमंत्रित वैदिक उपाय उत्पाद:' : 'Consecrated Remedies:'}
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {cat.suggestedProducts.map((p, pIdx) => (
+                            <span
+                              key={pIdx}
+                              className="text-[11px] px-2.5 py-1 rounded-lg bg-navy-950/80 border border-navy-700 text-gray-300 flex items-center gap-1 hover:border-gold-500/40 transition-colors"
+                            >
+                              <Sparkles className="w-2.5 h-2.5 text-gold-400" />
+                              <span>{language === 'hi' ? p.nameHi : p.nameEn}</span>
+                              <span className="text-gold-400 font-semibold font-mono ml-0.5">₹{p.price}</span>
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="mt-6 pt-4 border-t border-navy-800 flex items-center justify-between gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setCareDrawerOpen(true)}
-                      className="text-xs font-semibold text-gray-400 hover:text-gold-400 flex items-center gap-1 transition-colors"
-                    >
-                      <Headphones className="w-3.5 h-3.5 text-gold-400" />
-                      <span>{language === 'hi' ? 'उपाय परामर्श लें' : 'Remedy Guidance'}</span>
-                    </button>
+                    <div className="mt-6 pt-4 border-t border-navy-800 flex items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setCareDrawerOpen(true)}
+                        className="text-xs font-semibold text-gray-400 hover:text-gold-400 flex items-center gap-1 transition-colors btn-interactive active:scale-95"
+                      >
+                        <Headphones className="w-3.5 h-3.5 text-gold-400" />
+                        <span>{language === 'hi' ? 'उपाय परामर्श लें' : 'Remedy Guidance'}</span>
+                      </button>
 
-                    <Link
-                      href={`/checkout/${cat.suggestedReportSlug}`}
-                      className="py-2.5 px-4 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-bold text-xs hover:brightness-110 shadow-gold-glow flex items-center gap-1.5 transition-all"
-                    >
-                      <span>{language === 'hi' ? 'परामर्श बुक करें' : 'Get Guidance'}</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
+                      <Link
+                        href={`/checkout/${cat.suggestedReportSlug}`}
+                        className="py-2.5 px-4 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-bold text-xs hover:brightness-110 shadow-gold-glow flex items-center gap-1.5 transition-all btn-interactive active:scale-95"
+                      >
+                        <span>{language === 'hi' ? 'परामर्श बुक करें' : 'Get Guidance'}</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
                   </div>
-                </div>
+                </ScrollReveal>
               );
             })}
           </div>
@@ -484,47 +504,32 @@ export default function HomeView({ services }: HomeViewProps) {
       {/* 3. HOW IT WORKS (4 STEPS) */}
       <section className="py-16 bg-navy-900/60 border-b border-navy-800/80 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
+          <ScrollReveal direction="up" className="text-center mb-12">
             <span className="text-xs font-bold text-gold-400 uppercase tracking-widest">
               {t('howItWorksBadge')}
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1 font-heading">
               {t('howItWorksTitle')}
             </h2>
-          </div>
+          </ScrollReveal>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <div className="bg-navy-950/80 border border-navy-800 rounded-2xl p-5 relative hover:border-gold-500/30 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-gold-500/10 border border-gold-500/30 flex items-center justify-center text-gold-400 font-black text-sm mb-4">
-                {t('step1Num')}
-              </div>
-              <h3 className="text-base font-bold text-white mb-2">{t('step1Title')}</h3>
-              <p className="text-xs text-gray-400 leading-relaxed">{t('step1Desc')}</p>
-            </div>
-
-            <div className="bg-navy-950/80 border border-navy-800 rounded-2xl p-5 relative hover:border-gold-500/30 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-mystic-500/10 border border-mystic-500/30 flex items-center justify-center text-mystic-400 font-black text-sm mb-4">
-                {t('step2Num')}
-              </div>
-              <h3 className="text-base font-bold text-white mb-2">{t('step2Title')}</h3>
-              <p className="text-xs text-gray-400 leading-relaxed">{t('step2Desc')}</p>
-            </div>
-
-            <div className="bg-navy-950/80 border border-navy-800 rounded-2xl p-5 relative hover:border-gold-500/30 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-gold-500/10 border border-gold-500/30 flex items-center justify-center text-gold-400 font-black text-sm mb-4">
-                {t('step3Num')}
-              </div>
-              <h3 className="text-base font-bold text-white mb-2">{t('step3Title')}</h3>
-              <p className="text-xs text-gray-400 leading-relaxed">{t('step3Desc')}</p>
-            </div>
-
-            <div className="bg-navy-950/80 border border-navy-800 rounded-2xl p-5 relative hover:border-gold-500/30 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-black text-sm mb-4">
-                {t('step4Num')}
-              </div>
-              <h3 className="text-base font-bold text-white mb-2">{t('step4Title')}</h3>
-              <p className="text-xs text-gray-400 leading-relaxed">{t('step4Desc')}</p>
-            </div>
+            {[
+              { num: t('step1Num'), title: t('step1Title'), desc: t('step1Desc'), color: 'text-gold-400 bg-gold-500/10 border-gold-500/30' },
+              { num: t('step2Num'), title: t('step2Title'), desc: t('step2Desc'), color: 'text-mystic-400 bg-mystic-500/10 border-mystic-500/30' },
+              { num: t('step3Num'), title: t('step3Title'), desc: t('step3Desc'), color: 'text-gold-400 bg-gold-500/10 border-gold-500/30' },
+              { num: t('step4Num'), title: t('step4Title'), desc: t('step4Desc'), color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' },
+            ].map((step, sIdx) => (
+              <ScrollReveal key={sIdx} direction="up" delay={sIdx * 120}>
+                <div className="bg-navy-950/80 border border-navy-800 rounded-2xl p-5 relative hover:border-gold-500/30 transition-all card-interactive h-full">
+                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center font-black text-sm mb-4 ${step.color}`}>
+                    {step.num}
+                  </div>
+                  <h3 className="text-base font-bold text-white mb-2">{step.title}</h3>
+                  <p className="text-xs text-gray-400 leading-relaxed">{step.desc}</p>
+                </div>
+              </ScrollReveal>
+            ))}
           </div>
         </div>
       </section>
@@ -532,7 +537,7 @@ export default function HomeView({ services }: HomeViewProps) {
       {/* 4. SERVICES SECTION (5 TIERS) */}
       <section className="py-20 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
+          <ScrollReveal direction="up" className="text-center mb-12">
             <span className="text-xs font-bold text-gold-400 uppercase tracking-widest">
               {t('servicesBadge')}
             </span>
@@ -542,7 +547,7 @@ export default function HomeView({ services }: HomeViewProps) {
             <p className="text-sm text-gray-400 mt-2 max-w-lg mx-auto">
               {t('servicesSubtitle')}
             </p>
-          </div>
+          </ScrollReveal>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {activeServices.map((s, idx) => {
@@ -550,91 +555,97 @@ export default function HomeView({ services }: HomeViewProps) {
               const isWhatsApp = s.price === 149 || s.slug === 'vedic-kundli-whatsapp';
 
               return (
-                <div
+                <ScrollReveal
                   key={s.id}
-                  className={`flex flex-col justify-between bg-navy-900 border rounded-3xl p-6 sm:p-7 relative transition-all hover:scale-[1.01] ${
-                    isPremium
-                      ? 'border-purple-500/50 bg-gradient-to-b from-navy-900 via-navy-900 to-purple-950/20'
-                      : isWhatsApp
-                      ? 'border-emerald-500/50 shadow-emerald-glow bg-gradient-to-b from-navy-900 to-navy-850'
-                      : idx === 0
-                      ? 'border-gold-500/60 shadow-gold-glow bg-gradient-to-b from-navy-900 to-navy-850'
-                      : 'border-navy-700/80 hover:border-gold-500/30'
-                  }`}
+                  direction="up"
+                  delay={idx * 90}
+                  className="h-full"
                 >
-                  {isPremium ? (
-                    <span className="absolute -top-3 right-6 px-3 py-0.5 rounded-full bg-amber-500 text-navy-950 text-[10px] font-extrabold uppercase tracking-wider shadow">
-                      {t('tier499Badge')}
-                    </span>
-                  ) : isWhatsApp ? (
-                    <span className="absolute -top-3 right-6 px-3 py-0.5 rounded-full bg-emerald-500 text-navy-950 text-[10px] font-extrabold uppercase tracking-wider shadow">
-                      {t('tier149Badge')}
-                    </span>
-                  ) : s.price === 99 || s.slug === 'comprehensive-destiny' ? (
-                    <span className="absolute -top-3 right-6 px-3 py-0.5 rounded-full bg-gold-500 text-navy-950 text-[10px] font-extrabold uppercase tracking-wider shadow">
-                      {t('tier99Badge')}
-                    </span>
-                  ) : s.price === 49 || s.slug === 'quick-kundli-glance' ? (
-                    <span className="absolute -top-3 right-6 px-3 py-0.5 rounded-full bg-gold-500 text-navy-950 text-[10px] font-extrabold uppercase tracking-wider shadow">
-                      {t('tier49Badge')}
-                    </span>
-                  ) : s.price === 89 || s.slug === 'life-direction-transit' ? (
-                    <span className="absolute -top-3 right-6 px-3 py-0.5 rounded-full bg-gold-500 text-navy-950 text-[10px] font-extrabold uppercase tracking-wider shadow">
-                      {t('tier89Badge')}
-                    </span>
-                  ) : null}
+                  <div
+                    className={`flex flex-col justify-between bg-navy-900 border rounded-3xl p-6 sm:p-7 relative transition-all card-interactive h-full shadow-lg ${
+                      isPremium
+                        ? 'border-gold-500/60 animate-luxury-glow bg-gradient-to-b from-navy-900 via-navy-900 to-purple-950/20'
+                        : isWhatsApp
+                        ? 'border-emerald-500/50 shadow-emerald-glow bg-gradient-to-b from-navy-900 to-navy-850'
+                        : idx === 0
+                        ? 'border-gold-500/60 shadow-gold-glow bg-gradient-to-b from-navy-900 to-navy-850'
+                        : 'border-navy-700/80 hover:border-gold-500/40'
+                    }`}
+                  >
+                    {isPremium ? (
+                      <span className="absolute -top-3 right-6 px-3 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-gold-500 text-navy-950 text-[10px] font-extrabold uppercase tracking-wider shadow animate-pulse-ring">
+                        {t('tier499Badge')}
+                      </span>
+                    ) : isWhatsApp ? (
+                      <span className="absolute -top-3 right-6 px-3 py-0.5 rounded-full bg-emerald-500 text-navy-950 text-[10px] font-extrabold uppercase tracking-wider shadow">
+                        {t('tier149Badge')}
+                      </span>
+                    ) : s.price === 99 || s.slug === 'comprehensive-destiny' ? (
+                      <span className="absolute -top-3 right-6 px-3 py-0.5 rounded-full bg-gold-500 text-navy-950 text-[10px] font-extrabold uppercase tracking-wider shadow">
+                        {t('tier99Badge')}
+                      </span>
+                    ) : s.price === 49 || s.slug === 'quick-kundli-glance' ? (
+                      <span className="absolute -top-3 right-6 px-3 py-0.5 rounded-full bg-gold-500 text-navy-950 text-[10px] font-extrabold uppercase tracking-wider shadow">
+                        {t('tier49Badge')}
+                      </span>
+                    ) : s.price === 89 || s.slug === 'life-direction-transit' ? (
+                      <span className="absolute -top-3 right-6 px-3 py-0.5 rounded-full bg-gold-500 text-navy-950 text-[10px] font-extrabold uppercase tracking-wider shadow">
+                        {t('tier89Badge')}
+                      </span>
+                    ) : null}
 
-                  <div>
-                    <div className="flex items-start justify-between gap-4 mb-3">
-                      <div>
-                        <h3 className="text-lg sm:text-xl font-bold text-white font-heading">
-                          {getServiceName(s)}
-                        </h3>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
-                          <Clock className="w-3.5 h-3.5 text-gold-400" />
-                          <span>{t('serviceDeliveryLabel')} {getServiceDelivery(s)}</span>
+                    <div>
+                      <div className="flex items-start justify-between gap-4 mb-3">
+                        <div>
+                          <h3 className="text-lg sm:text-xl font-bold text-white font-heading">
+                            {getServiceName(s)}
+                          </h3>
+                          <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
+                            <Clock className="w-3.5 h-3.5 text-gold-400" />
+                            <span>{t('serviceDeliveryLabel')} {getServiceDelivery(s)}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className={`text-2xl sm:text-3xl font-black ${isPremium ? 'text-amber-400' : isWhatsApp ? 'text-emerald-400' : 'text-white'}`}>
+                            ₹{s.price}
+                          </div>
+                          <span className="text-[10px] text-gray-400 uppercase">{t('serviceOneTime')}</span>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className={`text-2xl sm:text-3xl font-black ${isPremium ? 'text-amber-400' : isWhatsApp ? 'text-emerald-400' : 'text-white'}`}>
-                          ₹{s.price}
-                        </div>
-                        <span className="text-[10px] text-gray-400 uppercase">{t('serviceOneTime')}</span>
-                      </div>
+
+                      <p className="text-xs sm:text-sm text-gray-300 leading-relaxed mb-6">
+                        {getServiceDesc(s)}
+                      </p>
                     </div>
 
-                    <p className="text-xs sm:text-sm text-gray-300 leading-relaxed mb-6">
-                      {getServiceDesc(s)}
-                    </p>
-                  </div>
-
-                  <div className="pt-4 border-t border-navy-800 flex items-center justify-between gap-4">
-                    <Link
-                      href={`/services/${s.slug}`}
-                      className="text-xs font-semibold text-gray-400 hover:text-gold-400 transition-colors"
-                    >
-                      {t('serviceViewDetails')}
-                    </Link>
-                    {isPremium ? (
-                      <button
-                        type="button"
-                        onClick={() => setCareDrawerOpen(true)}
-                        className="py-2.5 px-5 rounded-xl bg-navy-800 border border-amber-500/40 text-amber-300 font-bold text-xs hover:bg-navy-750 flex items-center gap-1.5 transition-all"
-                      >
-                        <span>{t('tier499Badge')} • {language === 'hi' ? 'विवरण' : 'Info'}</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    ) : (
+                    <div className="pt-4 border-t border-navy-800 flex items-center justify-between gap-4">
                       <Link
-                        href={`/checkout/${s.slug}`}
-                        className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-bold text-xs hover:brightness-110 shadow-gold-glow flex items-center gap-1.5 transition-all"
+                        href={`/services/${s.slug}`}
+                        className="text-xs font-semibold text-gray-400 hover:text-gold-400 transition-colors active:scale-95"
                       >
-                        <span>{t('serviceGetAnalysis')}</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
+                        {t('serviceViewDetails')}
                       </Link>
-                    )}
+                      {isPremium ? (
+                        <button
+                          type="button"
+                          onClick={() => setCareDrawerOpen(true)}
+                          className="py-2.5 px-5 rounded-xl bg-navy-800 border border-amber-500/40 text-amber-300 font-bold text-xs hover:bg-navy-750 flex items-center gap-1.5 transition-all btn-interactive active:scale-95"
+                        >
+                          <span>{t('tier499Badge')} • {language === 'hi' ? 'विवरण' : 'Info'}</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      ) : (
+                        <Link
+                          href={`/checkout/${s.slug}`}
+                          className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-bold text-xs hover:brightness-110 shadow-gold-glow flex items-center gap-1.5 transition-all btn-interactive active:scale-95"
+                        >
+                          <span>{t('serviceGetAnalysis')}</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                      )}
+                    </div>
                   </div>
-                </div>
+                </ScrollReveal>
               );
             })}
           </div>
@@ -647,7 +658,7 @@ export default function HomeView({ services }: HomeViewProps) {
       {/* 4. SAMPLE REPORT DEMO */}
       <section className="py-16 bg-navy-900/40 border-y border-navy-800 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10">
+          <ScrollReveal direction="up" className="text-center mb-10">
             <span className="text-xs font-bold text-gold-400 uppercase tracking-widest">
               {t('sampleBadge')}
             </span>
@@ -657,10 +668,10 @@ export default function HomeView({ services }: HomeViewProps) {
             <div className="inline-block mt-2 px-3 py-1 rounded-full bg-navy-800 border border-gold-500/30 text-gold-300 text-[11px] font-semibold">
               {t('sampleDisclaimer')}
             </div>
-          </div>
+          </ScrollReveal>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            <div className="lg:col-span-5 flex flex-col items-center">
+            <ScrollReveal direction="right" className="lg:col-span-5 flex flex-col items-center">
               <VedicChartSvg chartData={sampleDemoChart} />
               <div className="mt-4 flex items-center gap-3 text-xs text-gray-300">
                 <span className="px-2.5 py-1 rounded-lg bg-navy-800 border border-navy-700">
@@ -673,10 +684,10 @@ export default function HomeView({ services }: HomeViewProps) {
                   {language === 'hi' ? 'नक्षत्र: ' : 'Nakshatra: '}<strong className="text-gold-400">{language === 'hi' ? 'रोहिणी' : 'Rohini'}</strong>
                 </span>
               </div>
-            </div>
+            </ScrollReveal>
 
-            <div className="lg:col-span-7 space-y-4">
-              <div className="bg-navy-950/80 border border-navy-800 rounded-2xl p-5 shadow">
+            <ScrollReveal direction="left" className="lg:col-span-7 space-y-4">
+              <div className="bg-navy-950/80 border border-navy-800 rounded-2xl p-5 shadow card-interactive">
                 <div className="flex items-center gap-2 text-gold-400 text-xs font-bold uppercase tracking-wider mb-2 font-heading">
                   <Star className="w-4 h-4" />
                   <span>{t('samplePersonalityTitle')}</span>
@@ -686,7 +697,7 @@ export default function HomeView({ services }: HomeViewProps) {
                 </p>
               </div>
 
-              <div className="bg-navy-950/80 border border-navy-800 rounded-2xl p-5 shadow">
+              <div className="bg-navy-950/80 border border-navy-800 rounded-2xl p-5 shadow card-interactive">
                 <div className="flex items-center gap-2 text-gold-400 text-xs font-bold uppercase tracking-wider mb-2 font-heading">
                   <Zap className="w-4 h-4" />
                   <span>{t('sampleCareerTitle')}</span>
@@ -696,7 +707,7 @@ export default function HomeView({ services }: HomeViewProps) {
                 </p>
               </div>
 
-              <div className="bg-navy-950/80 border border-navy-800 rounded-2xl p-5 shadow">
+              <div className="bg-navy-950/80 border border-navy-800 rounded-2xl p-5 shadow card-interactive">
                 <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2 font-heading">
                   <CheckCircle2 className="w-4 h-4" />
                   <span>{t('sampleRecommendationsTitle')}</span>
@@ -707,7 +718,7 @@ export default function HomeView({ services }: HomeViewProps) {
                   <li>{t('sampleRec3')}</li>
                 </ul>
               </div>
-            </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -715,45 +726,36 @@ export default function HomeView({ services }: HomeViewProps) {
       {/* 5. TRUST SECTION */}
       <section className="py-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
+          <ScrollReveal direction="up" className="text-center mb-12">
             <span className="text-xs font-bold text-gold-400 uppercase tracking-widest">
               {t('trustBadge')}
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1 font-heading">
               {t('trustTitle')}
             </h2>
-          </div>
+          </ScrollReveal>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="bg-navy-900 border border-navy-800 rounded-2xl p-6">
-              <Lock className="w-6 h-6 text-gold-400 mb-3" />
-              <h3 className="text-base font-bold text-white mb-1.5 font-heading">
-                {t('trust1Title')}
-              </h3>
-              <p className="text-xs text-gray-400 leading-relaxed">
-                {t('trust1Desc')}
-              </p>
-            </div>
-
-            <div className="bg-navy-900 border border-navy-800 rounded-2xl p-6">
-              <ShieldCheck className="w-6 h-6 text-gold-400 mb-3" />
-              <h3 className="text-base font-bold text-white mb-1.5 font-heading">
-                {t('trust2Title')}
-              </h3>
-              <p className="text-xs text-gray-400 leading-relaxed">
-                {t('trust2Desc')}
-              </p>
-            </div>
-
-            <div className="bg-navy-900 border border-navy-800 rounded-2xl p-6">
-              <MessageSquare className="w-6 h-6 text-gold-400 mb-3" />
-              <h3 className="text-base font-bold text-white mb-1.5 font-heading">
-                {t('trust3Title')}
-              </h3>
-              <p className="text-xs text-gray-400 leading-relaxed">
-                {t('trust3Desc')}
-              </p>
-            </div>
+            {[
+              { icon: Lock, title: t('trust1Title'), desc: t('trust1Desc') },
+              { icon: ShieldCheck, title: t('trust2Title'), desc: t('trust2Desc') },
+              { icon: MessageSquare, title: t('trust3Title'), desc: t('trust3Desc') },
+            ].map((trust, tIdx) => {
+              const Icon = trust.icon;
+              return (
+                <ScrollReveal key={tIdx} direction="up" delay={tIdx * 120}>
+                  <div className="bg-navy-900 border border-navy-800 rounded-2xl p-6 card-interactive h-full">
+                    <Icon className="w-6 h-6 text-gold-400 mb-3" />
+                    <h3 className="text-base font-bold text-white mb-1.5 font-heading">
+                      {trust.title}
+                    </h3>
+                    <p className="text-xs text-gray-400 leading-relaxed">
+                      {trust.desc}
+                    </p>
+                  </div>
+                </ScrollReveal>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -761,26 +763,28 @@ export default function HomeView({ services }: HomeViewProps) {
       {/* 6. FAQ SECTION */}
       <section className="py-16 bg-navy-900/60 border-t border-navy-800 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-10">
+          <ScrollReveal direction="up" className="text-center mb-10">
             <span className="text-xs font-bold text-gold-400 uppercase tracking-widest">
               {t('faqBadge')}
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1 font-heading">
               {t('faqTitle')}
             </h2>
-          </div>
+          </ScrollReveal>
 
           <div className="space-y-4">
             {faqs.map((faq, idx) => (
-              <details key={idx} className="group bg-navy-950/80 border border-navy-800 rounded-2xl p-5 open:border-gold-500/40 transition-colors">
-                <summary className="font-bold text-sm text-white flex items-center justify-between cursor-pointer list-none">
-                  <span>{faq.q}</span>
-                  <span className="text-gold-400 group-open:rotate-180 transition-transform">▼</span>
-                </summary>
-                <p className="mt-3 text-xs text-gray-300 leading-relaxed">
-                  {faq.a}
-                </p>
-              </details>
+              <ScrollReveal key={idx} direction="up" delay={idx * 60}>
+                <details className="group bg-navy-950/80 border border-navy-800 rounded-2xl p-5 open:border-gold-500/40 transition-all card-interactive">
+                  <summary className="font-bold text-sm text-white flex items-center justify-between cursor-pointer list-none select-none">
+                    <span>{faq.q}</span>
+                    <span className="text-gold-400 group-open:rotate-180 transition-transform duration-300">▼</span>
+                  </summary>
+                  <p className="mt-3 text-xs text-gray-300 leading-relaxed animate-page-enter">
+                    {faq.a}
+                  </p>
+                </details>
+              </ScrollReveal>
             ))}
           </div>
         </div>
@@ -788,24 +792,26 @@ export default function HomeView({ services }: HomeViewProps) {
 
       {/* 7. BOTTOM CONVERSION CTA */}
       <section className="py-16 px-4 sm:px-6 text-center">
-        <div className="max-w-2xl mx-auto bg-gradient-to-b from-navy-900 to-navy-950 border border-gold-500/40 rounded-3xl p-8 sm:p-12 shadow-gold-glow-lg">
-          <div className="w-12 h-12 rounded-2xl bg-gold-500/20 border border-gold-500/40 flex items-center justify-center text-gold-400 mx-auto mb-4">
-            <Sparkles className="w-6 h-6" />
+        <ScrollReveal direction="zoom">
+          <div className="max-w-2xl mx-auto bg-gradient-to-b from-navy-900 to-navy-950 border border-gold-500/40 rounded-3xl p-8 sm:p-12 shadow-gold-glow-lg card-interactive">
+            <div className="w-12 h-12 rounded-2xl bg-gold-500/20 border border-gold-500/40 flex items-center justify-center text-gold-400 mx-auto mb-4 animate-pulse-ring">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-white mb-3 font-heading">
+              {t('ctaTitle')}
+            </h2>
+            <p className="text-xs sm:text-sm text-gray-300 mb-6 max-w-lg mx-auto">
+              {t('ctaSubtitle')}
+            </p>
+            <Link
+              href={`/checkout/${primaryService.slug}`}
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-bold text-sm hover:brightness-110 shadow-gold-glow transition-all btn-interactive active:scale-95 animate-shimmer-sweep"
+            >
+              <span>{t('ctaButton')}</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-white mb-3 font-heading">
-            {t('ctaTitle')}
-          </h2>
-          <p className="text-xs sm:text-sm text-gray-300 mb-6 max-w-lg mx-auto">
-            {t('ctaSubtitle')}
-          </p>
-          <Link
-            href={`/checkout/${primaryService.slug}`}
-            className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-bold text-sm hover:brightness-110 shadow-gold-glow transition-all"
-          >
-            <span>{t('ctaButton')}</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
+        </ScrollReveal>
       </section>
     </div>
   );

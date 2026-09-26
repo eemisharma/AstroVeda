@@ -110,6 +110,118 @@ body {
   animation: emeraldPulse 2.5s ease-in-out infinite;
 }
 
+/* Page Change & Route Transition */
+@keyframes pageEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-page-enter {
+  animation: pageEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Smooth Horizontal Live Ticker */
+@keyframes ticker {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-ticker {
+  display: flex;
+  animation: ticker 36s linear infinite;
+}
+
+/* Golden Shimmer Sweep */
+@keyframes shimmerSweep {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer-sweep {
+  background: linear-gradient(
+    90deg,
+    rgba(229, 184, 66, 0) 0%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(229, 184, 66, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmerSweep 3s infinite;
+}
+
+/* Pulsing Indicator Ring */
+@keyframes pulseRing {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(229, 184, 66, 0.65);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(229, 184, 66, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(229, 184, 66, 0);
+  }
+}
+
+.animate-pulse-ring {
+  animation: pulseRing 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Luxury Card Glow (₹499 Premium) */
+@keyframes luxuryGlow {
+  0%, 100% {
+    border-color: rgba(229, 184, 66, 0.45);
+    box-shadow: 0 0 25px -4px rgba(229, 184, 66, 0.25);
+  }
+  50% {
+    border-color: rgba(245, 197, 24, 0.95);
+    box-shadow: 0 0 45px 5px rgba(229, 184, 66, 0.5);
+  }
+}
+
+.animate-luxury-glow {
+  animation: luxuryGlow 3.5s ease-in-out infinite;
+}
+
+/* Tactile Click Micro-Interactions */
+.btn-interactive {
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s ease, filter 0.15s ease;
+  user-select: none;
+}
+.btn-interactive:active {
+  transform: scale(0.96);
+}
+
+.card-interactive {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.card-interactive:hover {
+  transform: translateY(-4px);
+}
+.card-interactive:active {
+  transform: translateY(-1px) scale(0.99);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+
 /* Robust Print & PDF Styles */
 @media print {
   @page {

@@ -10,6 +10,10 @@ import ServiceWorkerRegister from '@/components/pwa/ServiceWorkerRegister';
 import UtmTracker from '@/components/marketing/UtmTracker';
 import CustomerCareButton from '@/components/customer-care/CustomerCareButton';
 import { LanguageProvider } from '@/lib/i18n/context';
+import RouteProgressBar from '@/components/layout/RouteProgressBar';
+import ScrollProgress from '@/components/layout/ScrollProgress';
+import CosmicStarfield from '@/components/common/CosmicStarfield';
+import PageTransition from '@/components/layout/PageTransition';
 
 const devanagari = Noto_Sans_Devanagari({
   subsets: ['devanagari', 'latin'],
@@ -72,9 +76,14 @@ export default function RootLayout({
     >
       <body className="min-h-screen flex flex-col bg-navy-950 font-sans text-gray-100 antialiased selection:bg-gold-500 selection:text-navy-950">
         <LanguageProvider>
+          <RouteProgressBar />
+          <ScrollProgress />
+          <CosmicStarfield />
           <OfflineBanner />
           <Navbar />
-          <main className="flex-1 pb-16 md:pb-0">{children}</main>
+          <main className="flex-1 pb-16 md:pb-0 relative z-10 flex flex-col">
+            <PageTransition>{children}</PageTransition>
+          </main>
           <Footer />
           <MobileNav />
           <CustomerCareButton />
