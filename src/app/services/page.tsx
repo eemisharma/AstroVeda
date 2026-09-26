@@ -1,9 +1,10 @@
 import prisma from '@/lib/db';
 import ServicesListView from '@/components/services/ServicesListView';
+import { FALLBACK_SERVICES } from '@/lib/constants/services';
 
 async function getServices() {
   try {
-    return await prisma.service.findMany({
+    const list = await prisma.service.findMany({
       where: { active: true },
       orderBy: { price: 'asc' },
       select: {
@@ -15,8 +16,12 @@ async function getServices() {
         deliveryTime: true,
       },
     });
+    if (list && list.length > 0) {
+      return list;
+    }
+    return FALLBACK_SERVICES;
   } catch (e) {
-    return [];
+    return FALLBACK_SERVICES;
   }
 }
 

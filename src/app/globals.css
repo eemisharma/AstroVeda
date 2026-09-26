@@ -31,6 +31,85 @@ body {
   background: #e5b842;
 }
 
+/* Hide scrollbars for smooth mobile horizontal carousels */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Celestial & Cosmic Micro-Animations */
+@keyframes celestialSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes celestialSpinReverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes celestialFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes celestialGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px -3px rgba(229, 184, 66, 0.25);
+    border-color: rgba(229, 184, 66, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px 2px rgba(229, 184, 66, 0.45);
+    border-color: rgba(229, 184, 66, 0.7);
+  }
+}
+
+@keyframes emeraldPulse {
+  0%, 100% {
+    box-shadow: 0 0 15px -3px rgba(16, 185, 129, 0.25);
+    border-color: rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px 2px rgba(16, 185, 129, 0.45);
+    border-color: rgba(16, 185, 129, 0.8);
+  }
+}
+
+.animate-spin-slow {
+  animation: celestialSpin 24s linear infinite;
+}
+
+.animate-spin-reverse-slow {
+  animation: celestialSpinReverse 32s linear infinite;
+}
+
+.animate-float {
+  animation: celestialFloat 4s ease-in-out infinite;
+}
+
+.animate-celestial-glow {
+  animation: celestialGlow 3s ease-in-out infinite;
+}
+
+.animate-emerald-pulse {
+  animation: emeraldPulse 2.5s ease-in-out infinite;
+}
+
 /* Robust Print & PDF Styles */
 @media print {
   @page {
