@@ -78,6 +78,18 @@ export default function Navbar() {
             {t('navServices')}
           </Link>
           <Link
+            href="/consultation/ai-chat"
+            className={`text-sm font-medium transition-all relative py-1 flex items-center gap-1.5 active:scale-95 ${
+              pathname.startsWith('/consultation/ai-chat')
+                ? 'text-gold-400 after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-gold-400 after:rounded-full after:shadow-gold-glow'
+                : 'text-gray-300 hover:text-white'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-gold-400 animate-pulse" />
+            <span>{language === 'hi' ? 'AI ज्योतिषी' : 'AI Astrologer'}</span>
+            <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-gold-500/20 text-gold-300 border border-gold-500/40">LIVE</span>
+          </Link>
+          <Link
             href="/about"
             className={`text-sm font-medium transition-all relative py-1 active:scale-95 ${
               pathname === '/about'
@@ -188,6 +200,17 @@ export default function Navbar() {
             className="block py-2 text-sm font-medium text-gray-200 hover:text-gold-400"
           >
             {t('navServices')}
+          </Link>
+          <Link
+            href="/consultation/ai-chat"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center justify-between py-2 text-sm font-semibold text-gold-400 hover:text-gold-300"
+          >
+            <span className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-gold-400 animate-pulse" />
+              <span>{language === 'hi' ? 'AI वैदिक ज्योतिषी' : 'AI Vedic Astrologer'}</span>
+            </span>
+            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-gold-500/20 text-gold-300 border border-gold-500/40">LIVE</span>
           </Link>
           <Link
             href="/about"
