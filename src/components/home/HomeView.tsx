@@ -89,14 +89,31 @@ export default function HomeView({ services }: HomeViewProps) {
   const primaryService = selectedService;
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setDropdownOpen(false);
+      }
+    };
+    if (dropdownOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [dropdownOpen]);
+
 
   const getServiceName = (s: any) => {
     if (language === 'hi' && HINDI_SERVICES[s.slug]) {
@@ -163,8 +180,17 @@ export default function HomeView({ services }: HomeViewProps) {
       {/* Live Astrological Consultations Ticker */}
       <LiveActivityTicker />
 
+      {/* Dimmed backdrop overlay when hero dropdown is open */}
+      {dropdownOpen && (
+        <div
+          className="fixed inset-0 z-20 bg-navy-950/75 backdrop-blur-[2px] transition-opacity animate-fade-in"
+          onClick={() => setDropdownOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* 1. HERO SECTION */}
-      <section className="relative pt-10 pb-16 md:pt-16 md:pb-28 px-4 sm:px-6">
+      <section className={`relative pt-10 pb-16 md:pt-16 md:pb-28 px-4 sm:px-6 ${dropdownOpen ? 'z-30' : 'z-20'}`}>
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[600px] overflow-hidden pointer-events-none">
           <div className="absolute top-[-150px] left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-gradient-to-b from-gold-500/10 via-mystic-500/10 to-transparent blur-3xl rounded-full" />
           <div className="absolute top-[80px] left-1/4 w-[350px] h-[350px] bg-mystic-600/10 blur-3xl rounded-full" />
@@ -182,7 +208,7 @@ export default function HomeView({ services }: HomeViewProps) {
           </div>
         </div>
 
-        <ScrollReveal direction="up" className="relative max-w-4xl mx-auto text-center">
+        <ScrollReveal direction="up" className="relative z-20 max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-navy-900/90 border border-gold-500/30 text-gold-300 text-xs font-semibold mb-6 shadow-gold-glow backdrop-blur-md animate-pulse-ring">
             <Sparkles className="w-3.5 h-3.5 text-gold-400" />
             <span>{t('heroBadge')}</span>
@@ -201,7 +227,7 @@ export default function HomeView({ services }: HomeViewProps) {
           </p>
 
           {/* Hero Action with Dropdown Selection in Ascending Order */}
-          <div ref={dropdownRef} className="relative max-w-xl mx-auto w-full">
+          <div ref={dropdownRef} className="relative z-30 max-w-xl mx-auto w-full">
             <div className="flex flex-col sm:flex-row items-stretch justify-center gap-3">
               {/* Primary "Get Report" button with Dropdown toggle */}
               <div className="relative flex-1">
@@ -261,9 +287,9 @@ export default function HomeView({ services }: HomeViewProps) {
             {dropdownOpen && (
               <div
                 role="listbox"
-                className="absolute left-0 right-0 top-full mt-3 z-50 bg-navy-900/98 backdrop-blur-xl border-2 border-gold-500/60 rounded-3xl p-3 sm:p-4 shadow-2xl text-left"
+                className="absolute left-0 right-0 top-full mt-3 z-50 bg-[#070b1e] border-2 border-gold-500 rounded-3xl p-3 sm:p-4 shadow-[0_25px_60px_rgba(0,0,0,0.98)] text-left"
               >
-                <div className="flex items-center justify-between px-2 py-2 border-b border-navy-800 mb-2.5">
+                <div className="flex items-center justify-between px-2 py-2 border-b border-navy-800/80 mb-2.5">
                   <span className="text-xs font-bold text-gold-400 uppercase tracking-wider flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-gold-400" />
                     {language === 'hi'
@@ -292,8 +318,8 @@ export default function HomeView({ services }: HomeViewProps) {
                         }}
                         className={`p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                           isSelected
-                            ? 'bg-gold-500/15 border-gold-500 text-white shadow-gold-glow'
-                            : 'bg-navy-950/80 border-navy-800 hover:border-gold-500/50 hover:bg-navy-850 text-gray-200'
+                            ? 'bg-gold-500/20 border-gold-500 text-white shadow-gold-glow'
+                            : 'bg-[#0f1738] border-navy-700/80 hover:border-gold-500/50 hover:bg-[#15204c] text-gray-200'
                         }`}
                       >
                         <div className="flex-1 min-w-0">
@@ -408,7 +434,7 @@ export default function HomeView({ services }: HomeViewProps) {
       </section>
 
       {/* 2. 4 CORE CONSULTATION CATEGORIES */}
-      <section className="py-16 bg-navy-900/50 border-y border-navy-800/80 px-4 sm:px-6">
+      <section className="relative z-10 py-16 bg-navy-900/50 border-y border-navy-800/80 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           <ScrollReveal direction="up" className="text-center mb-12">
             <span className="text-xs font-bold text-gold-400 uppercase tracking-widest">
