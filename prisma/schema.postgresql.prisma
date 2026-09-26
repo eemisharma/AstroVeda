@@ -1,0 +1,131 @@
+// PostgreSQL Schema for Production Deployment
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String         @id @default(cuid())
+  name         String
+  email        String         @unique
+  phone        String
+  passwordHash String
+  role         String         @default("CUSTOMER")
+  birthProfiles BirthProfile[]
+  orders       Order[]
+  notifications Notification[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model BirthProfile {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateOfBirth  String
+  timeOfBirth  String
+  birthCity    String
+  birthCountry String    @default("India")
+  latitude     Float?
+  longitude    Float?
+  timezone     String?   @default("Asia/Kolkata")
+  gender       String?
+  currentCity  String?
+  orders       Order[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Service {
+  id           String    @id @default(cuid())
+  name         String
+  slug         String    @unique
+  description  String
+  price        Float
+  currency     String    @default("INR")
+  deliveryTime String    @default("24 hours")
+  active       Boolean   @default(true)
+  orders       Order[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Order {
+  id             String             @id @default(cuid())
+  orderNumber    String             @unique
+  userId         String
+  user           User               @relation(fields: [userId], references: [id])
+  serviceId      String
+  service        Service            @relation(fields: [serviceId], references: [id])
+  birthProfileId String
+  birthProfile   BirthProfile       @relation(fields: [birthProfileId], references: [id])
+  amount         Float
+  currency       String             @default("INR")
+  status         String             @default("PENDING_PAYMENT")
+  paymentStatus  String             @default("PENDING")
+  utmSource      String?
+  utmMedium      String?
+  utmCampaign    String?
+  utmContent     String?
+  fbclid         String?
+  payment        Payment?
+  analysis       AstrologyAnalysis?
+  report         Report?
+  notifications  Notification[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  orderId       String   @unique
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider      String   @default("RAZORPAY")
+  transactionId String
+  amount        Float
+  currency      String   @default("INR")
+  status        String
+  rawReference  String?
+  createdAt     DateTime @default(now())
+}
+
+model AstrologyAnalysis {
+  id            String   @id @default(cuid())
+  orderId       String   @unique
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  astrologyData String
+  aiInput       String?
+  aiOutput      String?
+  status        String   @default("COMPLETED")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Report {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  title     String
+  content   String
+  pdfUrl    String?
+  status    String   @default("READY")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  orderId   String?
+  order     Order?   @relation(fields: [orderId], references: [id])
+  channel   String   @default("WHATSAPP")
+  type      String
+  status    String   @default("SENT")
+  message   String
+  createdAt DateTime @default(now())
+}

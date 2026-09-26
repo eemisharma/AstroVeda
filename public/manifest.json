@@ -1,0 +1,47 @@
+{
+  "name": "AstroConsult - Personalized Astrology Analysis",
+  "short_name": "AstroConsult",
+  "description": "Premium mobile-first Vedic astrology consultation and personalized birth chart analysis.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0e17",
+  "theme_color": "#0b0e17",
+  "categories": ["lifestyle", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Explore Services",
+      "url": "/services",
+      "description": "View personalized astrology reports"
+    },
+    {
+      "name": "My Dashboard",
+      "url": "/dashboard",
+      "description": "Access your reports and consultations"
+    }
+  ]
+}

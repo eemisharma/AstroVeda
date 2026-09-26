@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String         @id @default(cuid())
+  name         String
+  email        String         @unique
+  phone        String
+  passwordHash String
+  role         String         @default("CUSTOMER") // "CUSTOMER" | "ADMIN"
+  birthProfiles BirthProfile[]
+  orders       Order[]
+  notifications Notification[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model BirthProfile {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateOfBirth  String    // YYYY-MM-DD
+  timeOfBirth  String    // HH:mm (24-hr)
+  birthCity    String
+  birthCountry String    @default("India")
+  latitude     Float?
+  longitude    Float?
+  timezone     String?   @default("Asia/Kolkata")
+  gender       String?
+  currentCity  String?
+  orders       Order[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Service {
+  id           String    @id @default(cuid())
+  name         String
+  slug         String    @unique
+  description  String
+  price        Float
+  currency     String    @default("INR")
+  deliveryTime String    @default("24 hours")
+  active       Boolean   @default(true)
+  orders       Order[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Order {
+  id             String             @id @default(cuid())
+  orderNumber    String             @unique
+  userId         String
+  user           User               @relation(fields: [userId], references: [id])
+  serviceId      String
+  service        Service            @relation(fields: [serviceId], references: [id])
+  birthProfileId String
+  birthProfile   BirthProfile       @relation(fields: [birthProfileId], references: [id])
+  amount         Float
+  currency       String             @default("INR")
+  status         String             @default("PENDING_PAYMENT") // PENDING_PAYMENT, PAID, PROCESSING, ANALYSIS_READY, DELIVERED, CANCELLED, REFUNDED
+  paymentStatus  String             @default("PENDING") // PENDING, SUCCESS, FAILED
+  utmSource      String?
+  utmMedium      String?
+  utmCampaign    String?
+  utmContent     String?
+  fbclid         String?
+  payment        Payment?
+  analysis       AstrologyAnalysis?
+  report         Report?
+  notifications  Notification[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  orderId       String   @unique
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider      String   @default("RAZORPAY")
+  transactionId String
+  amount        Float
+  currency      String   @default("INR")
+  status        String   // SUCCESS, FAILED, PENDING
+  rawReference  String?  // JSON string
+  createdAt     DateTime @default(now())
+}
+
+model AstrologyAnalysis {
+  id            String   @id @default(cuid())
+  orderId       String   @unique
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  astrologyData String   // JSON string of calculated planets, signs, nakshatra, houses, etc.
+  aiInput       String?  // JSON prompt / context passed to AI
+  aiOutput      String?  // Raw AI response if available
+  status        String   @default("COMPLETED") // PENDING, COMPLETED, FAILED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Report {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  title     String
+  content   String   // JSON string containing 10 sections: summary, personality, career, finance, relationships, strengths, challenges, recommendations, important_periods, disclaimer
+  pdfUrl    String?
+  status    String   @default("READY") // DRAFT, READY, DELIVERED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  orderId   String?
+  order     Order?   @relation(fields: [orderId], references: [id])
+  channel   String   @default("WHATSAPP") // WHATSAPP, EMAIL, SMS
+  type      String   // ORDER_CONFIRMATION, ANALYSIS_READY, SUPPORT
+  status    String   @default("SENT") // PENDING, SENT, FAILED
+  message   String
+  createdAt DateTime @default(now())
+}

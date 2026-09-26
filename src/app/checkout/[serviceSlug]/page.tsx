@@ -1,0 +1,768 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import {
+  Sparkles,
+  ArrowRight,
+  ArrowLeft,
+  Calendar,
+  Clock,
+  MapPin,
+  User,
+  Mail,
+  Phone,
+  ShieldCheck,
+  AlertTriangle,
+  CreditCard,
+} from 'lucide-react';
+import PaymentSimulatorModal from '@/components/checkout/PaymentSimulatorModal';
+import { getStoredUtm } from '@/lib/marketing/utm';
+import { useLanguage } from '@/lib/i18n/context';
+import { HINDI_SERVICES } from '@/lib/i18n/translations';
+
+const DEFAULT_SERVICES = [
+  { id: '1', slug: 'quick-kundli-glance', name: 'Quick Kundli Glance & Planetary Insights', price: 49 },
+  { id: '2', slug: 'life-direction-transit', name: 'Life Direction & Transit Guide', price: 89 },
+  { id: '3', slug: 'comprehensive-destiny', name: 'Comprehensive Destiny & House Analysis', price: 99 },
+  { id: '4', slug: 'vedic-kundli-whatsapp', name: 'Deep Vedic Kundli + Live WhatsApp Consultation', price: 149 },
+  { id: '5', slug: 'premium-master-horoscope', name: 'AstroVeda Master Horoscope & Remedial Blueprint [Premium - Coming Soon]', price: 499 },
+];
+
+export default function CheckoutPage() {
+  const params = useParams();
+  const router = useRouter();
+  const { t, language } = useLanguage();
+  const serviceSlug = params.serviceSlug as string;
+
+  const [service, setService] = useState<any>(null);
+  const [allServices, setAllServices] = useState<any[]>(DEFAULT_SERVICES);
+  const [loading, setLoading] = useState(true);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    dateOfBirth: '',
+    timeOfBirth: '',
+    birthCity: '',
+    birthCountry: 'India',
+    gender: 'Male',
+    currentCity: '',
+  });
+
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [paymentOrder, setPaymentOrder] = useState<any>(null);
+  const [showSimulator, setShowSimulator] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
+
+  // Fetch all active services for ascending dropdown switcher
+  useEffect(() => {
+    fetch('/api/services')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.services) {
+          setAllServices(data.services);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch(`/api/services/${serviceSlug}`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Service not found');
+        return res.json();
+      })
+      .then((data) => setService(data.service))
+      .catch(() => router.push('/services'))
+      .finally(() => setLoading(false));
+
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.user) {
+          setFormData((prev) => ({
+            ...prev,
+            name: prev.name || data.user.name || '',
+            email: prev.email || data.user.email || '',
+            phone: prev.phone || data.user.phone || '',
+          }));
+        }
+      })
+      .catch(() => {});
+  }, [serviceSlug, router]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (formErrors[e.target.name]) {
+      setFormErrors({ ...formErrors, [e.target.name]: '' });
+    }
+  };
+
+  const handleNextToBirthInfo = (e: React.FormEvent) => {
+    e.preventDefault();
+    const errors: Record<string, string> = {};
+    if (!formData.name.trim()) errors.name = language === 'hi' ? 'कृपया अपना पूरा नाम दर्ज करें' : 'Please enter your full name';
+    if (!formData.email.trim() || !formData.email.includes('@')) errors.email = language === 'hi' ? 'वैध ईमेल पता आवश्यक है' : 'Valid email is required';
+    if (!formData.phone.trim() || formData.phone.length < 10) errors.phone = language === 'hi' ? 'वैध १०-अंकीय व्हाट्सएप नंबर आवश्यक है' : 'Valid 10-digit WhatsApp number is required';
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    setStep(2);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleNextToSummary = (e: React.FormEvent) => {
+    e.preventDefault();
+    const errors: Record<string, string> = {};
+    if (!formData.dateOfBirth) errors.dateOfBirth = language === 'hi' ? 'जन्म तिथि आवश्यक है' : 'Date of birth is required';
+    if (!formData.timeOfBirth) errors.timeOfBirth = language === 'hi' ? 'सटीक जन्म समय आवश्यक है' : 'Exact birth time is required';
+    if (!formData.birthCity.trim()) errors.birthCity = language === 'hi' ? 'जन्म स्थान/शहर आवश्यक है' : 'Birth city is required';
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    setStep(3);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleProceedToPayment = async () => {
+    setIsSubmitting(true);
+    setPaymentError('');
+
+    try {
+      const utm = getStoredUtm() || {};
+
+      const res = await fetch('/api/checkout/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serviceSlug,
+          ...formData,
+          utm_source: utm.utm_source,
+          utm_medium: utm.utm_medium,
+          utm_campaign: utm.utm_campaign,
+          utm_content: utm.utm_content,
+          fbclid: utm.fbclid,
+        }),
+      });
+
+      const orderData = await res.json();
+      if (!res.ok) {
+        throw new Error(orderData.error || 'Failed to initialize order');
+      }
+
+      setPaymentOrder(orderData);
+
+      if (orderData.isSimulated || !(window as any).Razorpay) {
+        setShowSimulator(true);
+      } else {
+        const options = {
+          key: orderData.keyId,
+          amount: Math.round(orderData.amount * 100),
+          currency: orderData.currency,
+          name: 'AstroConsult',
+          description: orderData.serviceName,
+          order_id: orderData.gatewayOrderId,
+          prefill: {
+            name: formData.name,
+            email: formData.email,
+            contact: formData.phone,
+          },
+          theme: {
+            color: '#e5b842',
+          },
+          handler: async function (response: any) {
+            handleVerifyPayment({
+              gatewayOrderId: response.razorpay_order_id,
+              paymentId: response.razorpay_payment_id,
+              signature: response.razorpay_signature,
+            });
+          },
+          modal: {
+            ondismiss: function () {
+              setIsSubmitting(false);
+            },
+          },
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', function (resp: any) {
+          router.push(`/payment/failed?error=${encodeURIComponent(resp.error.description || 'Payment Failed')}`);
+        });
+        rzp.open();
+      }
+    } catch (err: any) {
+      setPaymentError(err.message);
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyPayment = async (paymentData: {
+    gatewayOrderId: string;
+    paymentId: string;
+    signature: string;
+  }) => {
+    try {
+      const res = await fetch('/api/checkout/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: paymentOrder.orderId,
+          gatewayOrderId: paymentData.gatewayOrderId,
+          paymentId: paymentData.paymentId,
+          signature: paymentData.signature,
+        }),
+      });
+
+      const verifyData = await res.json();
+      if (!res.ok) {
+        throw new Error(verifyData.error || 'Verification failed');
+      }
+
+      // Requirement 6: Automatically open WhatsApp chat when ₹149 service is selected and payment is verified
+      if (service.price === 149 || serviceSlug === 'vedic-kundli-whatsapp') {
+        const whatsappPhone = process.env.NEXT_PUBLIC_WHATSAPP_SUPPORT_PHONE || '919876543210';
+        const waUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
+          language === 'hi'
+            ? `नमस्ते AstroVeda, मैंने ₹149 का वैदिक कुंडली + व्हाट्सएप परामर्श (ऑर्डर #${paymentOrder.orderNumber}) का भुगतान सफलतापूर्वक पूरा किया है। कृपया मेरी कुंडली का लाइव विश्लेषण आरंभ करें।`
+            : `Hello AstroVeda, I have completed payment for my ₹149 Vedic Kundli + WhatsApp consultation (Order #${paymentOrder.orderNumber}). Please initiate my consultation.`
+        )}`;
+        try {
+          window.open(waUrl, '_blank');
+        } catch {}
+      }
+
+      router.push(`/payment/success?orderId=${paymentOrder.orderId}`);
+    } catch (err: any) {
+      setShowSimulator(false);
+      router.push(`/payment/failed?error=${encodeURIComponent(err.message)}`);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gold-400 border-t-transparent" />
+      </div>
+    );
+  }
+
+  const localizedServiceName =
+    language === 'hi' && HINDI_SERVICES[service.slug]
+      ? HINDI_SERVICES[service.slug].name
+      : service.name;
+
+  const localizedDeliveryTime =
+    language === 'hi' && HINDI_SERVICES[service.slug]
+      ? HINDI_SERVICES[service.slug].deliveryTime
+      : service.deliveryTime;
+
+  // Requirement 2: ₹499 Premium tier is Coming Soon
+  if (service?.price === 499 || serviceSlug === 'premium-master-horoscope') {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center px-4 py-12">
+        <div className="max-w-md w-full bg-navy-900 border border-amber-500/40 rounded-3xl p-8 text-center shadow-gold-glow">
+          <div className="w-16 h-16 rounded-3xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto mb-4">
+            <Sparkles className="w-8 h-8" />
+          </div>
+          <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest block mb-1">
+            {language === 'hi' ? 'आगामी विशेष सेवा' : 'Coming Soon'}
+          </span>
+          <h1 className="text-2xl font-black text-white font-heading mb-2">
+            {localizedServiceName} (₹499)
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-300 mb-6 leading-relaxed">
+            {language === 'hi'
+              ? 'यह हमारा सम्पूर्ण वैदिक मास्टर पैकेज है जिसमें सभी १० सेवाएं, विस्तृत भविष्यफल एवं अभिमंत्रित उपाय उत्पाद सम्मिलित हैं। यह सेवा अतिशीघ्र लाइव हो रही है।'
+              : 'Our master package including all 10 consultations, complete lifecycle forecasting, and consecrated remedial products is launching soon!'}
+          </p>
+          <div className="space-y-3">
+            <div className="text-left bg-navy-950/80 border border-navy-800 rounded-2xl p-4 mb-4">
+              <span className="text-[11px] font-bold text-gold-400 block mb-2">
+                {language === 'hi' ? 'तत्काल उपलब्ध रिपोर्ट्स (आरोही क्रम):' : 'Instantly Available Reports (Ascending Order):'}
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                <Link
+                  href="/checkout/quick-kundli-glance"
+                  className="p-2.5 rounded-xl bg-navy-900 border border-gold-500/30 hover:border-gold-500 text-left block transition-colors"
+                >
+                  <span className="text-xs font-bold text-gold-400 block font-mono">₹49</span>
+                  <span className="text-[11px] text-gray-200 line-clamp-1">
+                    {language === 'hi' ? 'त्वरित कुंडली दृष्टि' : 'Quick Glance'}
+                  </span>
+                </Link>
+                <Link
+                  href="/checkout/life-direction-transit"
+                  className="p-2.5 rounded-xl bg-navy-900 border border-gold-500/30 hover:border-gold-500 text-left block transition-colors"
+                >
+                  <span className="text-xs font-bold text-gold-400 block font-mono">₹89</span>
+                  <span className="text-[11px] text-gray-200 line-clamp-1">
+                    {language === 'hi' ? 'गोचर व जीवन दिशा' : 'Transit Guide'}
+                  </span>
+                </Link>
+                <Link
+                  href="/checkout/comprehensive-destiny"
+                  className="p-2.5 rounded-xl bg-navy-900 border border-gold-500/30 hover:border-gold-500 text-left block transition-colors"
+                >
+                  <span className="text-xs font-bold text-gold-400 block font-mono">₹99</span>
+                  <span className="text-[11px] text-gray-200 line-clamp-1">
+                    {language === 'hi' ? 'विस्तृत भाग्य कुंडली' : 'Destiny Reading'}
+                  </span>
+                </Link>
+                <Link
+                  href="/checkout/vedic-kundli-whatsapp"
+                  className="p-2.5 rounded-xl bg-navy-900 border border-emerald-500/40 hover:border-emerald-500 text-left block transition-colors"
+                >
+                  <span className="text-xs font-bold text-emerald-400 block font-mono">₹149</span>
+                  <span className="text-[11px] text-gray-200 line-clamp-1">
+                    {language === 'hi' ? 'व्हाट्सएप परामर्श' : 'WhatsApp Chat'}
+                  </span>
+                </Link>
+              </div>
+            </div>
+
+            <Link
+              href="/services"
+              className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-bold text-sm block hover:brightness-110 transition-all"
+            >
+              {language === 'hi' ? 'समस्त ५ रिपोर्ट्स का विवरण देखें' : 'View All 5 Reports Catalog'}
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen py-8 px-4 sm:px-6 max-w-2xl mx-auto">
+      {/* Step Indicators */}
+      <div className="flex items-center justify-between mb-8 px-2">
+        <div className="flex items-center gap-2">
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+            step >= 1 ? 'bg-gold-500 text-navy-950 shadow-gold-glow' : 'bg-navy-800 text-gray-500'
+          }`}>
+            {language === 'hi' ? '१' : '1'}
+          </div>
+          <span className={`text-xs font-semibold ${step >= 1 ? 'text-white' : 'text-gray-500'}`}>
+            {t('stepContact')}
+          </span>
+        </div>
+
+        <div className={`flex-1 h-[2px] mx-3 ${step >= 2 ? 'bg-gold-500/80' : 'bg-navy-800'}`} />
+
+        <div className="flex items-center gap-2">
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+            step >= 2 ? 'bg-gold-500 text-navy-950 shadow-gold-glow' : 'bg-navy-800 text-gray-500'
+          }`}>
+            {language === 'hi' ? '२' : '2'}
+          </div>
+          <span className={`text-xs font-semibold ${step >= 2 ? 'text-white' : 'text-gray-500'}`}>
+            {t('stepBirth')}
+          </span>
+        </div>
+
+        <div className={`flex-1 h-[2px] mx-3 ${step === 3 ? 'bg-gold-500/80' : 'bg-navy-800'}`} />
+
+        <div className="flex items-center gap-2">
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+            step === 3 ? 'bg-gold-500 text-navy-950 shadow-gold-glow' : 'bg-navy-800 text-gray-500'
+          }`}>
+            {language === 'hi' ? '३' : '3'}
+          </div>
+          <span className={`text-xs font-semibold ${step === 3 ? 'text-white' : 'text-gray-500'}`}>
+            {t('stepPayment')}
+          </span>
+        </div>
+      </div>
+
+      {/* Selected Service Header Banner with Ascending Service Switcher */}
+      <div className="bg-navy-900 border border-gold-500/30 rounded-2xl p-4 sm:p-5 mb-6 shadow-gold-glow">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-gold-400 font-bold">
+              {language === 'hi' ? 'चयनित ज्योतिषीय परामर्श' : 'Consultation Selected'}
+            </span>
+            <h2 className="text-base sm:text-lg font-bold text-white font-heading">{localizedServiceName}</h2>
+          </div>
+          <div className="text-right shrink-0">
+            <div className="text-2xl font-black text-gold-400">₹{service.price}</div>
+            <span className="text-[10px] text-gray-400 block">
+              {t('serviceDeliveryLabel')} {localizedDeliveryTime}
+            </span>
+          </div>
+        </div>
+
+        {/* Dropdown service switcher in ascending order */}
+        {allServices.length > 0 && (
+          <div className="mt-3.5 pt-3 border-t border-navy-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <label
+              htmlFor="checkout-service-switcher"
+              className="text-xs text-gray-300 font-medium flex items-center gap-1.5"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-gold-400 shrink-0" />
+              <span>
+                {language === 'hi'
+                  ? 'परामर्श सेवा बदलें (आरोही क्रम ₹४९ से):'
+                  : 'Switch Consultation (Ascending Order):'}
+              </span>
+            </label>
+            <select
+              id="checkout-service-switcher"
+              value={serviceSlug}
+              onChange={(e) => {
+                const newSlug = e.target.value;
+                router.push(`/checkout/${newSlug}`);
+              }}
+              className="bg-navy-950 border border-gold-500/40 rounded-xl px-3 py-1.5 text-xs text-gold-300 font-bold focus:outline-none focus:ring-1 focus:ring-gold-400 cursor-pointer max-w-full sm:max-w-xs"
+            >
+              {allServices.map((s) => (
+                <option key={s.id} value={s.slug} className="bg-navy-900 text-white py-1">
+                  ₹{s.price} • {language === 'hi' && HINDI_SERVICES[s.slug] ? HINDI_SERVICES[s.slug].name : s.name} {s.price === 499 ? (language === 'hi' ? '[आगामी]' : '[Coming Soon]') : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {paymentError && (
+        <div className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 shrink-0" />
+          <span>{paymentError}</span>
+        </div>
+      )}
+
+      {/* STEP 1: PERSONAL INFORMATION */}
+      {step === 1 && (
+        <div className="bg-navy-900 border border-navy-800 rounded-3xl p-6 sm:p-8 shadow-xl">
+          <div className="mb-6">
+            <h1 className="text-xl font-black text-white font-heading">
+              {t('step1Heading')}
+            </h1>
+            <p className="text-xs text-gray-400 mt-1">
+              {t('step1Subheading')}
+            </p>
+          </div>
+
+          <form onSubmit={handleNextToBirthInfo} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                {t('fullNameLabel')}
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder={t('fullNamePlaceholder')}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-navy-950 border border-navy-700 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gold-400 transition-colors"
+                />
+                <User className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+              </div>
+              {formErrors.name && <p className="text-[11px] text-red-400 mt-1">{formErrors.name}</p>}
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                {t('emailLabel')}
+              </label>
+              <div className="relative">
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder={t('emailPlaceholder')}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-navy-950 border border-navy-700 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gold-400 transition-colors"
+                />
+                <Mail className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+              </div>
+              {formErrors.email && <p className="text-[11px] text-red-400 mt-1">{formErrors.email}</p>}
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                {t('phoneLabel')}
+              </label>
+              <div className="relative">
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder={t('phonePlaceholder')}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-navy-950 border border-navy-700 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gold-400 transition-colors"
+                />
+                <Phone className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+              </div>
+              {formErrors.phone && <p className="text-[11px] text-red-400 mt-1">{formErrors.phone}</p>}
+              <span className="text-[10px] text-gray-400 mt-1 block">
+                {t('phoneNote')}
+              </span>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-4 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-bold text-sm hover:brightness-110 shadow-gold-glow flex items-center justify-center gap-2 transition-all active:scale-[0.99] mt-6"
+            >
+              <span>{t('continueToBirth')}</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* STEP 2: BIRTH DETAILS */}
+      {step === 2 && (
+        <div className="bg-navy-900 border border-navy-800 rounded-3xl p-6 sm:p-8 shadow-xl">
+          <div className="mb-6">
+            <h1 className="text-xl font-black text-white font-heading">
+              {t('step2Heading')}
+            </h1>
+            <p className="text-xs text-gray-400 mt-1">
+              {t('step2Subheading')}
+            </p>
+          </div>
+
+          <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <p className="leading-relaxed">
+              <strong>{t('accuracyWarningTitle')}</strong> {t('accuracyWarningText')}
+            </p>
+          </div>
+
+          <form onSubmit={handleNextToSummary} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                  {t('dobLabel')}
+                </label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    name="dateOfBirth"
+                    value={formData.dateOfBirth}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-navy-950 border border-navy-700 text-white text-sm focus:outline-none focus:border-gold-400 transition-colors"
+                  />
+                  <Calendar className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+                </div>
+                {formErrors.dateOfBirth && <p className="text-[11px] text-red-400 mt-1">{formErrors.dateOfBirth}</p>}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                  {t('tobLabel')}
+                </label>
+                <div className="relative">
+                  <input
+                    type="time"
+                    name="timeOfBirth"
+                    value={formData.timeOfBirth}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-navy-950 border border-navy-700 text-white text-sm focus:outline-none focus:border-gold-400 transition-colors"
+                  />
+                  <Clock className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+                </div>
+                {formErrors.timeOfBirth && <p className="text-[11px] text-red-400 mt-1">{formErrors.timeOfBirth}</p>}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                  {t('cityLabel')}
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="birthCity"
+                    value={formData.birthCity}
+                    onChange={handleChange}
+                    placeholder={t('cityPlaceholder')}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-navy-950 border border-navy-700 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gold-400 transition-colors"
+                  />
+                  <MapPin className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+                </div>
+                {formErrors.birthCity && <p className="text-[11px] text-red-400 mt-1">{formErrors.birthCity}</p>}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                  {t('countryLabel')}
+                </label>
+                <input
+                  type="text"
+                  name="birthCountry"
+                  value={formData.birthCountry}
+                  onChange={handleChange}
+                  placeholder="India"
+                  className="w-full px-4 py-3 rounded-xl bg-navy-950 border border-navy-700 text-white text-sm focus:outline-none focus:border-gold-400 transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                  {t('genderLabel')}
+                </label>
+                <select
+                  name="gender"
+                  value={formData.gender}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-xl bg-navy-950 border border-navy-700 text-white text-sm focus:outline-none focus:border-gold-400 transition-colors"
+                >
+                  <option value="Male">{t('genderMale')}</option>
+                  <option value="Female">{t('genderFemale')}</option>
+                  <option value="Non-Binary">{t('genderOther')}</option>
+                  <option value="Prefer not to say">{t('genderPreferNot')}</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                  {t('currentCityLabel')}
+                </label>
+                <input
+                  type="text"
+                  name="currentCity"
+                  value={formData.currentCity}
+                  onChange={handleChange}
+                  placeholder={language === 'hi' ? 'उदा. मुंबई' : 'e.g. Mumbai'}
+                  className="w-full px-4 py-3 rounded-xl bg-navy-950 border border-navy-700 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gold-400 transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-4">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="py-3.5 px-5 rounded-xl bg-navy-800 text-gray-300 hover:bg-navy-700 font-semibold text-xs flex items-center gap-1.5 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>{t('backBtn')}</span>
+              </button>
+              <button
+                type="submit"
+                className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-bold text-sm hover:brightness-110 shadow-gold-glow flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
+              >
+                <span>{t('continueToSummary')}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* STEP 3: ORDER SUMMARY & PAYMENT */}
+      {step === 3 && (
+        <div className="bg-navy-900 border border-navy-800 rounded-3xl p-6 sm:p-8 shadow-xl">
+          <div className="mb-6">
+            <h1 className="text-xl font-black text-white font-heading">
+              {t('step3Heading')}
+            </h1>
+            <p className="text-xs text-gray-400 mt-1">
+              {t('step3Subheading')}
+            </p>
+          </div>
+
+          <div className="bg-navy-950/80 border border-navy-800 rounded-2xl p-5 space-y-3 mb-6">
+            <div className="flex justify-between text-xs py-1 border-b border-navy-800">
+              <span className="text-gray-400">{t('summaryService')}</span>
+              <strong className="text-white text-right font-heading">{localizedServiceName}</strong>
+            </div>
+            <div className="flex justify-between text-xs py-1 border-b border-navy-800">
+              <span className="text-gray-400">{t('summaryFee')}</span>
+              <strong className="text-gold-400 text-base font-black">₹{service.price}</strong>
+            </div>
+            <div className="flex justify-between text-xs py-1 border-b border-navy-800">
+              <span className="text-gray-400">{t('summaryName')}</span>
+              <span className="text-white font-medium">{formData.name}</span>
+            </div>
+            <div className="flex justify-between text-xs py-1 border-b border-navy-800">
+              <span className="text-gray-400">{t('summaryWhatsApp')}</span>
+              <span className="text-white font-medium">{formData.phone}</span>
+            </div>
+            <div className="flex justify-between text-xs py-1 border-b border-navy-800">
+              <span className="text-gray-400">{t('summaryDob')}</span>
+              <span className="text-white font-medium">{formData.dateOfBirth}</span>
+            </div>
+            <div className="flex justify-between text-xs py-1 border-b border-navy-800">
+              <span className="text-gray-400">{t('summaryTob')}</span>
+              <span className="text-white font-medium">{formData.timeOfBirth}</span>
+            </div>
+            <div className="flex justify-between text-xs py-1">
+              <span className="text-gray-400">{t('summaryPlace')}</span>
+              <span className="text-white font-medium">{formData.birthCity}, {formData.birthCountry}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setStep(2)}
+              disabled={isSubmitting}
+              className="py-4 px-5 rounded-xl bg-navy-800 text-gray-300 hover:bg-navy-700 font-semibold text-xs flex items-center gap-1.5 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>{t('editDetailsBtn')}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleProceedToPayment}
+              disabled={isSubmitting}
+              className="flex-1 py-4 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-bold text-sm hover:brightness-110 shadow-gold-glow flex items-center justify-center gap-2 transition-all active:scale-[0.99] disabled:opacity-60"
+            >
+              {isSubmitting ? (
+                <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-navy-950 border-t-transparent" />
+              ) : (
+                <>
+                  <CreditCard className="w-4 h-4" />
+                  <span>{t('proceedPayBtn')} (₹{service.price})</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className="mt-6 pt-4 border-t border-navy-800 flex items-center justify-center gap-2 text-[11px] text-gray-400">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>{t('sslSecured')}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Test Simulator Modal */}
+      {paymentOrder && (
+        <PaymentSimulatorModal
+          isOpen={showSimulator}
+          orderNumber={paymentOrder.orderNumber}
+          orderId={paymentOrder.orderId}
+          amount={paymentOrder.amount}
+          serviceName={localizedServiceName}
+          gatewayOrderId={paymentOrder.gatewayOrderId}
+          onSuccess={handleVerifyPayment}
+          onFailure={(err) => {
+            setShowSimulator(false);
+            router.push(`/payment/failed?error=${encodeURIComponent(err)}`);
+          }}
+          onClose={() => {
+            setShowSimulator(false);
+            setIsSubmitting(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
