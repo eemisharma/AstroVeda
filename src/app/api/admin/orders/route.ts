@@ -26,18 +26,24 @@ export async function GET(req: Request) {
       ];
     }
 
-    const orders = await prisma.order.findMany({
-      where,
-      include: {
-        user: true,
-        service: true,
-        birthProfile: true,
-        payment: true,
-        report: { select: { id: true, status: true, title: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
+    let orders: any[] = [];
+    try {
+      orders = await prisma.order.findMany({
+        where,
+        include: {
+          user: true,
+          service: true,
+          birthProfile: true,
+          payment: true,
+          report: { select: { id: true, status: true, title: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      });
+    } catch (dbErr) {
+      console.warn('Prisma orders query failed, returning fallback empty list', dbErr);
+      orders = [];
+    }
 
     return NextResponse.json({ orders });
   } catch (error: any) {
