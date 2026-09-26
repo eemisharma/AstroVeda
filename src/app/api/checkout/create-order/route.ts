@@ -4,6 +4,8 @@ import prisma from '@/lib/db';
 import { getSessionUser, hashPassword } from '@/lib/auth';
 import { createPaymentOrder } from '@/lib/payment/razorpay';
 
+import { FALLBACK_SERVICES } from '@/lib/constants/services';
+
 const checkoutSchema = z.object({
   serviceSlug: z.string(),
   name: z.string().min(2, 'Please enter your full name'),
@@ -29,10 +31,40 @@ export async function POST(req: Request) {
     const body = await req.json();
     const validated = checkoutSchema.parse(body);
 
-    // 1. Fetch requested service
-    const service = await prisma.service.findUnique({
+    // 1. Fetch requested service with automatic fallback & self-healing upsert
+    let service = await prisma.service.findUnique({
       where: { slug: validated.serviceSlug },
     });
+
+    if (!service) {
+      const fallback = FALLBACK_SERVICES.find((s) => s.slug === validated.serviceSlug);
+      if (fallback) {
+        try {
+          service = await prisma.service.upsert({
+            where: { slug: fallback.slug },
+            update: {
+              name: fallback.name,
+              description: fallback.description,
+              price: fallback.price,
+              currency: fallback.currency,
+              deliveryTime: fallback.deliveryTime,
+              active: true,
+            },
+            create: {
+              name: fallback.name,
+              slug: fallback.slug,
+              description: fallback.description,
+              price: fallback.price,
+              currency: fallback.currency,
+              deliveryTime: fallback.deliveryTime,
+              active: true,
+            },
+          });
+        } catch (dbErr) {
+          console.error('Self-healing service upsert error:', dbErr);
+        }
+      }
+    }
 
     if (!service || !service.active) {
       return NextResponse.json({ error: 'Selected service is no longer available' }, { status: 404 });

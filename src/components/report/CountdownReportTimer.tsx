@@ -55,12 +55,7 @@ export default function CountdownReportTimer({
   const seconds = remainingSeconds % 60;
 
   const formatDevanagari = (num: number): string => {
-    const padded = String(num).padStart(2, '0');
-    if (language === 'hi') {
-      const devanagariDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
-      return padded.replace(/\d/g, (d) => devanagariDigits[parseInt(d, 10)]);
-    }
-    return padded;
+    return String(num).padStart(2, '0');
   };
 
   const elapsedSeconds = DURATION_SECONDS - remainingSeconds;

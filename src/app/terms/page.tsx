@@ -13,7 +13,7 @@ export default function TermsPage() {
       <div className="space-y-6 bg-navy-900 border border-navy-800 rounded-3xl p-6 sm:p-8">
         <section>
           <h2 className="text-base font-bold text-white mb-2 font-heading">
-            {language === 'hi' ? '१. शर्तों की स्वीकृति' : '1. Acceptance of Terms'}
+            {language === 'hi' ? '1. शर्तों की स्वीकृति' : '1. Acceptance of Terms'}
           </h2>
           <p>
             {language === 'hi'
@@ -24,7 +24,7 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-base font-bold text-white mb-2 font-heading">
-            {language === 'hi' ? '२. परामर्श का स्वरूप' : '2. Consultation Nature'}
+            {language === 'hi' ? '2. परामर्श का स्वरूप' : '2. Consultation Nature'}
           </h2>
           <p>
             {language === 'hi'
@@ -35,7 +35,7 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-base font-bold text-white mb-2 font-heading">
-            {language === 'hi' ? '३. जन्म विवरण की सटीकता की जिम्मेदारी' : '3. User Responsibility for Birth Details'}
+            {language === 'hi' ? '3. जन्म विवरण की सटीकता की जिम्मेदारी' : '3. User Responsibility for Birth Details'}
           </h2>
           <p>
             {language === 'hi'
@@ -46,7 +46,7 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-base font-bold text-white mb-2 font-heading">
-            {language === 'hi' ? '४. भुगतान एवं रिपोर्ट डिलीवरी' : '4. Payment & Delivery'}
+            {language === 'hi' ? '4. भुगतान एवं रिपोर्ट डिलीवरी' : '4. Payment & Delivery'}
           </h2>
           <p>
             {language === 'hi'

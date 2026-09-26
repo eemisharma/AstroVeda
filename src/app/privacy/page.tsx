@@ -13,7 +13,7 @@ export default function PrivacyPage() {
       <div className="space-y-6 bg-navy-900 border border-navy-800 rounded-3xl p-6 sm:p-8">
         <section>
           <h2 className="text-base font-bold text-white mb-2 font-heading">
-            {language === 'hi' ? '१. एकत्र की जाने वाली जानकारी' : '1. Personal Information Collected'}
+            {language === 'hi' ? '1. एकत्र की जाने वाली जानकारी' : '1. Personal Information Collected'}
           </h2>
           <p>
             {language === 'hi'
@@ -24,7 +24,7 @@ export default function PrivacyPage() {
 
         <section>
           <h2 className="text-base font-bold text-white mb-2 font-heading">
-            {language === 'hi' ? '२. हम आपकी जानकारी का उपयोग कैसे करते हैं' : '2. How We Use Your Data'}
+            {language === 'hi' ? '2. हम आपकी जानकारी का उपयोग कैसे करते हैं' : '2. How We Use Your Data'}
           </h2>
           <p>
             {language === 'hi' ? 'आपकी जानकारी का उपयोग केवल निम्नलिखित कार्यों के लिए किया जाता है:' : 'Your information is used exclusively to:'}
@@ -50,7 +50,7 @@ export default function PrivacyPage() {
 
         <section>
           <h2 className="text-base font-bold text-white mb-2 font-heading">
-            {language === 'hi' ? '३. विज्ञापन और ट्रैकिंग की सीमाएं' : '3. Advertising & Tracking Boundaries'}
+            {language === 'hi' ? '3. विज्ञापन और ट्रैकिंग की सीमाएं' : '3. Advertising & Tracking Boundaries'}
           </h2>
           <p>
             {language === 'hi'
@@ -61,18 +61,18 @@ export default function PrivacyPage() {
 
         <section>
           <h2 className="text-base font-bold text-white mb-2 font-heading">
-            {language === 'hi' ? '४. डेटा सुरक्षा मानक' : '4. Data Security'}
+            {language === 'hi' ? '4. डेटा सुरक्षा मानक' : '4. Data Security'}
           </h2>
           <p>
             {language === 'hi'
-              ? 'हम २५६-बिट एसएसएल एन्क्रिप्शन, सुरक्षित सर्वर-साइड सत्र और सख्त प्रमाणीकरण का उपयोग करते हैं जिससे कोई भी अनधिकृत व्यक्ति आपकी रिपोर्ट तक न पहुंच सके।'
+              ? 'हम 256-बिट एसएसएल एन्क्रिप्शन, सुरक्षित सर्वर-साइड सत्र और सख्त प्रमाणीकरण का उपयोग करते हैं जिससे कोई भी अनधिकृत व्यक्ति आपकी रिपोर्ट तक न पहुंच सके।'
               : 'We implement 256-bit SSL encryption, secure HTTP-only cookies, password hashing with industry standards, and strict authorization barriers preventing unauthorized users from accessing your reports.'}
           </p>
         </section>
 
         <section>
           <h2 className="text-base font-bold text-white mb-2 font-heading">
-            {language === 'hi' ? '५. डेटा विलोपन अनुरोध (Deletion)' : '5. Data Deletion Requests'}
+            {language === 'hi' ? '5. डेटा विलोपन अनुरोध (Deletion)' : '5. Data Deletion Requests'}
           </h2>
           <p>
             {language === 'hi'

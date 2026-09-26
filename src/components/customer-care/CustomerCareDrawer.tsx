@@ -144,10 +144,10 @@ export default function CustomerCareDrawer({ isOpen, onClose }: CustomerCareDraw
               <p className="text-xs text-gray-300 mt-1 leading-relaxed">
                 {selectedCategory.suggestedReportSlug === 'vedic-kundli-whatsapp'
                   ? (language === 'hi'
-                      ? 'इस समस्या के लिए व्यक्तिगत १०-खंडीय रिपोर्ट के साथ ज्योतिषी से सीधा व्हाट्सएप चैट परामर्श सर्वोत्तम है।'
+                      ? 'इस समस्या के लिए व्यक्तिगत 10-खंडीय रिपोर्ट के साथ ज्योतिषी से सीधा व्हाट्सएप चैट परामर्श सर्वोत्तम है।'
                       : 'Recommended for your concern: In-depth 10-section report combined with direct live WhatsApp astrologer consultation.')
                   : (language === 'hi'
-                      ? 'गहन १२ भावों का विश्लेषण, ग्रह दशा, धन योग और आने वाले २ वर्षों का सटीक मार्गदर्शन।'
+                      ? 'गहन 12 भावों का विश्लेषण, ग्रह दशा, धन योग और आने वाले 2 वर्षों का सटीक मार्गदर्शन।'
                       : 'Complete 12-house reading, planetary periods, wealth yogas, and actionable 2-year forecast.')}
               </p>
             </div>

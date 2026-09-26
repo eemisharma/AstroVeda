@@ -175,7 +175,7 @@ export default function ReportClientActions({
                     </span>
                   </div>
                   <p className="text-xs text-gray-400 leading-normal pl-7">
-                    सभी १० खंड, ग्रह स्थिति, दशा समय-सारणी एवं सिद्ध उपाय शुद्ध देवनागरी हिन्दी में।
+                    सभी 10 खंड, ग्रह स्थिति, दशा समय-सारणी एवं सिद्ध उपाय शुद्ध देवनागरी हिन्दी में।
                   </p>
                 </div>
                 <div className="w-8 h-8 rounded-full bg-gold-500 text-navy-950 flex items-center justify-center shrink-0 font-bold shadow">

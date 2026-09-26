@@ -20,7 +20,7 @@ export default function DisclaimerPage() {
       <div className="space-y-6 bg-navy-900 border border-navy-800 rounded-3xl p-6 sm:p-8">
         <section>
           <h2 className="text-base font-bold text-white mb-2 font-heading">
-            {language === 'hi' ? '१. सूचनात्मक एवं आत्म-चिंतन का उद्देश्य' : '1. Informational & Reflective Purpose'}
+            {language === 'hi' ? '1. सूचनात्मक एवं आत्म-चिंतन का उद्देश्य' : '1. Informational & Reflective Purpose'}
           </h2>
           <p>
             {language === 'hi'
@@ -31,18 +31,18 @@ export default function DisclaimerPage() {
 
         <section>
           <h2 className="text-base font-bold text-white mb-2 font-heading">
-            {language === 'hi' ? '२. कोई अंधविश्वास या अचूक भविष्यफल का दावा नहीं' : '2. No Supernatural Guarantees or Fatalistic Claims'}
+            {language === 'hi' ? '2. कोई अंधविश्वास या अचूक भविष्यफल का दावा नहीं' : '2. No Supernatural Guarantees or Fatalistic Claims'}
           </h2>
           <p>
             {language === 'hi'
-              ? 'एस्ट्रोकंसल्ट किसी भी प्रकार के १००% अचूक भविष्यवाणियों, चमत्कारी परिणामों या सुनिश्चित घटनाओं का दावा नहीं करता। हम किसी निश्चित लॉटरी, चमत्कारिक विवाह या अचानक धन लाभ की गारंटी नहीं देते। आपका कर्म, स्वतंत्र संकल्प और निर्णय ही आपके भविष्य को आकार देते हैं।'
+              ? 'एस्ट्रोकंसल्ट किसी भी प्रकार के 100% अचूक भविष्यवाणियों, चमत्कारी परिणामों या सुनिश्चित घटनाओं का दावा नहीं करता। हम किसी निश्चित लॉटरी, चमत्कारिक विवाह या अचानक धन लाभ की गारंटी नहीं देते। आपका कर्म, स्वतंत्र संकल्प और निर्णय ही आपके भविष्य को आकार देते हैं।'
               : 'AstroConsult explicitly disclaims any claims of 100% predictive accuracy, absolute certainty, or guaranteed life events. We do NOT guarantee specific financial gains, job acquisitions, marriages, lottery wins, or miraculous outcomes. You retain total free will, autonomy, and personal responsibility for all decisions and actions taken in your life.'}
           </p>
         </section>
 
         <section>
           <h2 className="text-base font-bold text-white mb-2 font-heading">
-            {language === 'hi' ? '३. चिकित्सा, कानूनी या वित्तीय सलाह का विकल्प नहीं' : '3. Not Professional Medical, Legal, or Financial Advice'}
+            {language === 'hi' ? '3. चिकित्सा, कानूनी या वित्तीय सलाह का विकल्प नहीं' : '3. Not Professional Medical, Legal, or Financial Advice'}
           </h2>
           <p>
             {language === 'hi'
@@ -53,7 +53,7 @@ export default function DisclaimerPage() {
 
         <section>
           <h2 className="text-base font-bold text-white mb-2 font-heading">
-            {language === 'hi' ? '४. नैतिक मार्गदर्शन की प्रतिबद्धता' : '4. Commitment to Ethical Guidance'}
+            {language === 'hi' ? '4. नैतिक मार्गदर्शन की प्रतिबद्धता' : '4. Commitment to Ethical Guidance'}
           </h2>
           <p>
             {language === 'hi'

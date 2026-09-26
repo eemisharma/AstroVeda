@@ -36,9 +36,12 @@ export default function CheckoutPage() {
   const { t, language } = useLanguage();
   const serviceSlug = params.serviceSlug as string;
 
-  const [service, setService] = useState<any>(null);
+  const matchedFallback =
+    DEFAULT_SERVICES.find((s) => s.slug === serviceSlug) || DEFAULT_SERVICES[3];
+
+  const [service, setService] = useState<any>(matchedFallback);
   const [allServices, setAllServices] = useState<any[]>(DEFAULT_SERVICES);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
   const [formData, setFormData] = useState({
@@ -65,7 +68,7 @@ export default function CheckoutPage() {
     fetch('/api/services')
       .then((res) => res.json())
       .then((data) => {
-        if (data.services) {
+        if (data.services && data.services.length > 0) {
           setAllServices(data.services);
         }
       })
@@ -78,8 +81,17 @@ export default function CheckoutPage() {
         if (!res.ok) throw new Error('Service not found');
         return res.json();
       })
-      .then((data) => setService(data.service))
-      .catch(() => router.push('/services'))
+      .then((data) => {
+        if (data.service) {
+          setService(data.service);
+        }
+      })
+      .catch((err) => {
+        console.warn('Using local fallback for service:', serviceSlug, err);
+        const fallback =
+          DEFAULT_SERVICES.find((s) => s.slug === serviceSlug) || DEFAULT_SERVICES[3];
+        setService(fallback);
+      })
       .finally(() => setLoading(false));
 
     fetch('/api/auth/me')
@@ -95,7 +107,7 @@ export default function CheckoutPage() {
         }
       })
       .catch(() => {});
-  }, [serviceSlug, router]);
+  }, [serviceSlug]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -109,7 +121,7 @@ export default function CheckoutPage() {
     const errors: Record<string, string> = {};
     if (!formData.name.trim()) errors.name = language === 'hi' ? 'कृपया अपना पूरा नाम दर्ज करें' : 'Please enter your full name';
     if (!formData.email.trim() || !formData.email.includes('@')) errors.email = language === 'hi' ? 'वैध ईमेल पता आवश्यक है' : 'Valid email is required';
-    if (!formData.phone.trim() || formData.phone.length < 10) errors.phone = language === 'hi' ? 'वैध १०-अंकीय व्हाट्सएप नंबर आवश्यक है' : 'Valid 10-digit WhatsApp number is required';
+    if (!formData.phone.trim() || formData.phone.length < 10) errors.phone = language === 'hi' ? 'वैध 10-अंकीय व्हाट्सएप नंबर आवश्यक है' : 'Valid 10-digit WhatsApp number is required';
 
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
@@ -229,7 +241,8 @@ export default function CheckoutPage() {
       }
 
       // Requirement 6: Automatically open WhatsApp chat when ₹149 service is selected and payment is verified
-      if (service.price === 149 || serviceSlug === 'vedic-kundli-whatsapp') {
+      const resolvedPrice = (service?.price ?? matchedFallback.price);
+      if (resolvedPrice === 149 || serviceSlug === 'vedic-kundli-whatsapp') {
         const whatsappPhone = process.env.NEXT_PUBLIC_WHATSAPP_SUPPORT_PHONE || '919876543210';
         const waUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
           language === 'hi'
@@ -256,18 +269,23 @@ export default function CheckoutPage() {
     );
   }
 
+  const activeService =
+    service ||
+    DEFAULT_SERVICES.find((s) => s.slug === serviceSlug) ||
+    DEFAULT_SERVICES[3];
+
   const localizedServiceName =
-    language === 'hi' && HINDI_SERVICES[service.slug]
-      ? HINDI_SERVICES[service.slug].name
-      : service.name;
+    language === 'hi' && HINDI_SERVICES[activeService.slug]
+      ? HINDI_SERVICES[activeService.slug].name
+      : activeService.name;
 
   const localizedDeliveryTime =
-    language === 'hi' && HINDI_SERVICES[service.slug]
-      ? HINDI_SERVICES[service.slug].deliveryTime
-      : service.deliveryTime;
+    language === 'hi' && HINDI_SERVICES[activeService.slug]
+      ? HINDI_SERVICES[activeService.slug].deliveryTime
+      : activeService.deliveryTime;
 
   // Requirement 2: ₹499 Premium tier is Coming Soon
-  if (service?.price === 499 || serviceSlug === 'premium-master-horoscope') {
+  if (activeService.price === 499 || serviceSlug === 'premium-master-horoscope') {
     return (
       <div className="min-h-[70vh] flex items-center justify-center px-4 py-12">
         <div className="max-w-md w-full bg-navy-900 border border-amber-500/40 rounded-3xl p-8 text-center shadow-gold-glow">
@@ -282,7 +300,7 @@ export default function CheckoutPage() {
           </h1>
           <p className="text-xs sm:text-sm text-gray-300 mb-6 leading-relaxed">
             {language === 'hi'
-              ? 'यह हमारा सम्पूर्ण वैदिक मास्टर पैकेज है जिसमें सभी १० सेवाएं, विस्तृत भविष्यफल एवं अभिमंत्रित उपाय उत्पाद सम्मिलित हैं। यह सेवा अतिशीघ्र लाइव हो रही है।'
+              ? 'यह हमारा सम्पूर्ण वैदिक मास्टर पैकेज है जिसमें सभी 10 सेवाएं, विस्तृत भविष्यफल एवं अभिमंत्रित उपाय उत्पाद सम्मिलित हैं। यह सेवा अतिशीघ्र लाइव हो रही है।'
               : 'Our master package including all 10 consultations, complete lifecycle forecasting, and consecrated remedial products is launching soon!'}
           </p>
           <div className="space-y-3">
@@ -334,7 +352,7 @@ export default function CheckoutPage() {
               href="/services"
               className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-bold text-sm block hover:brightness-110 transition-all"
             >
-              {language === 'hi' ? 'समस्त ५ रिपोर्ट्स का विवरण देखें' : 'View All 5 Reports Catalog'}
+              {language === 'hi' ? 'समस्त 5 रिपोर्ट्स का विवरण देखें' : 'View All 5 Reports Catalog'}
             </Link>
           </div>
         </div>
@@ -350,7 +368,7 @@ export default function CheckoutPage() {
           <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
             step >= 1 ? 'bg-gold-500 text-navy-950 shadow-gold-glow' : 'bg-navy-800 text-gray-500'
           }`}>
-            {language === 'hi' ? '१' : '1'}
+            1
           </div>
           <span className={`text-xs font-semibold ${step >= 1 ? 'text-white' : 'text-gray-500'}`}>
             {t('stepContact')}
@@ -363,7 +381,7 @@ export default function CheckoutPage() {
           <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
             step >= 2 ? 'bg-gold-500 text-navy-950 shadow-gold-glow' : 'bg-navy-800 text-gray-500'
           }`}>
-            {language === 'hi' ? '२' : '2'}
+            2
           </div>
           <span className={`text-xs font-semibold ${step >= 2 ? 'text-white' : 'text-gray-500'}`}>
             {t('stepBirth')}
@@ -376,7 +394,7 @@ export default function CheckoutPage() {
           <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
             step === 3 ? 'bg-gold-500 text-navy-950 shadow-gold-glow' : 'bg-navy-800 text-gray-500'
           }`}>
-            {language === 'hi' ? '३' : '3'}
+            3
           </div>
           <span className={`text-xs font-semibold ${step === 3 ? 'text-white' : 'text-gray-500'}`}>
             {t('stepPayment')}
@@ -394,7 +412,7 @@ export default function CheckoutPage() {
             <h2 className="text-base sm:text-lg font-bold text-white font-heading">{localizedServiceName}</h2>
           </div>
           <div className="text-right shrink-0">
-            <div className="text-2xl font-black text-gold-400">₹{service.price}</div>
+            <div className="text-2xl font-black text-gold-400">₹{activeService.price}</div>
             <span className="text-[10px] text-gray-400 block">
               {t('serviceDeliveryLabel')} {localizedDeliveryTime}
             </span>
@@ -411,7 +429,7 @@ export default function CheckoutPage() {
               <Sparkles className="w-3.5 h-3.5 text-gold-400 shrink-0" />
               <span>
                 {language === 'hi'
-                  ? 'परामर्श सेवा बदलें (आरोही क्रम ₹४९ से):'
+                  ? 'परामर्श सेवा बदलें (आरोही क्रम ₹49 से):'
                   : 'Switch Consultation (Ascending Order):'}
               </span>
             </label>
@@ -685,7 +703,7 @@ export default function CheckoutPage() {
             </div>
             <div className="flex justify-between text-xs py-1 border-b border-navy-800">
               <span className="text-gray-400">{t('summaryFee')}</span>
-              <strong className="text-gold-400 text-base font-black">₹{service.price}</strong>
+              <strong className="text-gold-400 text-base font-black">₹{activeService.price}</strong>
             </div>
             <div className="flex justify-between text-xs py-1 border-b border-navy-800">
               <span className="text-gray-400">{t('summaryName')}</span>
@@ -730,7 +748,7 @@ export default function CheckoutPage() {
               ) : (
                 <>
                   <CreditCard className="w-4 h-4" />
-                  <span>{t('proceedPayBtn')} (₹{service.price})</span>
+                  <span>{t('proceedPayBtn')} (₹{activeService.price})</span>
                 </>
               )}
             </button>

@@ -137,7 +137,7 @@ export const CONSULTATION_CATEGORIES: ProblemCategory[] = [
         benefitsEn: ['Protects from chronic debility & fear', 'Revitalizes biological cellular energy'],
       },
       {
-        nameHi: 'प्राकृतिक पंचमुखी रुद्राक्ष माला (१०८ मनके)',
+        nameHi: 'प्राकृतिक पंचमुखी रुद्राक्ष माला (108 मनके)',
         nameEn: 'Pure 5-Mukhi Rudraksha Japa Mala (108 Beads)',
         descriptionHi: 'दैनिक जप और धारण से रक्तचाप, मानसिक तनाव और अनिद्रा में चमत्कारी शांति।',
         descriptionEn: 'Classic 108-bead mala for meditation, soothing nervous anxiety and hypertension.',

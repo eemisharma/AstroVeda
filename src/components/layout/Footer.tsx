@@ -59,7 +59,7 @@ export default function Footer() {
 
           <div>
             <h4 className="text-white font-semibold text-xs uppercase tracking-wider mb-3">
-              {language === 'hi' ? 'वैदिक रिपोर्ट्स (५ स्तर)' : 'Vedic Reports (5 Tiers)'}
+              {language === 'hi' ? 'वैदिक रिपोर्ट्स (5 स्तर)' : 'Vedic Reports (5 Tiers)'}
             </h4>
             <ul className="space-y-2 text-[12px]">
               <li>

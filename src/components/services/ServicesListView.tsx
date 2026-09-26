@@ -78,7 +78,7 @@ export default function ServicesListView({ services }: { services: ServiceItem[]
               : 'bg-navy-900 border border-navy-700 text-gray-300 hover:border-gold-500/40'
           }`}
         >
-          {language === 'hi' ? 'समस्त ५ रिपोर्ट्स' : 'All 5 Reports'}
+          {language === 'hi' ? 'समस्त 5 रिपोर्ट्स' : 'All 5 Reports'}
         </button>
         {CONSULTATION_CATEGORIES.map((cat) => (
           <button

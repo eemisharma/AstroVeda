@@ -44,10 +44,6 @@ export default function DashboardOrdersClient({ orders }: DashboardOrdersClientP
   };
 
   const formatNumber = (num: number) => {
-    if (language === 'hi') {
-      const devanagariDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
-      return String(num).replace(/\d/g, (d) => devanagariDigits[parseInt(d, 10)]);
-    }
     return String(num);
   };
 

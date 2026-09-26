@@ -125,13 +125,13 @@ export default function HomeView({ services }: HomeViewProps) {
     {
       q: language === 'hi' ? 'सटीक जन्म समय इतना महत्वपूर्ण क्यों है?' : 'Why is exact birth time so important?',
       a: language === 'hi'
-        ? 'वैदिक ज्योतिष में लग्न (Ascendant) प्रत्येक २ घंटे में बदल जाता है। सटीक समय से ही आपके १२ भाव, ग्रह स्थितियां और महादशा का सही निर्धारण होता है।'
+        ? 'वैदिक ज्योतिष में लग्न (Ascendant) प्रत्येक 2 घंटे में बदल जाता है। सटीक समय से ही आपके 12 भाव, ग्रह स्थितियां और महादशा का सही निर्धारण होता है।'
         : 'In Vedic astrology, the Ascendant (Lagna) changes zodiac signs approximately every two hours. Exact birth time determines the precise house cusps and dasha timings.',
     },
     {
       q: language === 'hi' ? 'विश्लेषण तैयार होने में कितना समय लगता है?' : 'How long does the analysis take to prepare?',
       a: language === 'hi'
-        ? 'अधिकांश विश्लेषण कुछ ही मिनटों में या चुनी गई सेवा के आधार पर १२ से २४ घंटों में तैयार हो जाते हैं। आप बेझिझक पेज बंद कर सकते हैं, तैयार होने पर व्हाट्सएप सूचना मिल जाएगी।'
+        ? 'अधिकांश विश्लेषण कुछ ही मिनटों में या चुनी गई सेवा के आधार पर 12 से 24 घंटों में तैयार हो जाते हैं। आप बेझिझक पेज बंद कर सकते हैं, तैयार होने पर व्हाट्सएप सूचना मिल जाएगी।'
         : 'Most analyses are processed in real-time or within 12 to 24 hours depending on the chosen service. You can safely leave this page and check your customer dashboard at any time.',
     },
     {
@@ -143,7 +143,7 @@ export default function HomeView({ services }: HomeViewProps) {
     {
       q: language === 'hi' ? 'क्या मेरी जन्म जानकारी सुरक्षित है?' : 'Is my birth information secure?',
       a: language === 'hi'
-        ? 'हां, बिल्कुल। हम २५६-बिट एसएसएल एन्क्रिप्शन का उपयोग करते हैं और आपकी जानकारी कभी किसी विज्ञापनदाता या तीसरे पक्ष के साथ साझा नहीं की जाती।'
+        ? 'हां, बिल्कुल। हम 256-बिट एसएसएल एन्क्रिप्शन का उपयोग करते हैं और आपकी जानकारी कभी किसी विज्ञापनदाता या तीसरे पक्ष के साथ साझा नहीं की जाती।'
         : 'Yes. We implement bank-grade encryption, secure server-side sessions, and strict access controls. Only you and authorized system administrators can view your consultation.',
     },
     {
@@ -234,7 +234,7 @@ export default function HomeView({ services }: HomeViewProps) {
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span>
                 {language === 'hi'
-                  ? 'मूल्य ₹४९ से शुरू • ऊपर क्लिक करके सभी रिपोर्ट विकल्प देखें'
+                  ? 'मूल्य ₹49 से शुरू • ऊपर क्लिक करके सभी रिपोर्ट विकल्प देखें'
                   : 'Starting at ₹49 • Click above to explore all ascending tiers'}
               </span>
             </div>
@@ -249,11 +249,11 @@ export default function HomeView({ services }: HomeViewProps) {
                   <span className="text-xs font-bold text-gold-400 uppercase tracking-wider flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-gold-400" />
                     {language === 'hi'
-                      ? 'अपनी रिपोर्ट चुनें (आरोही क्रम: ₹४९ से)'
+                      ? 'अपनी रिपोर्ट चुनें (आरोही क्रम: ₹49 से)'
                       : 'Select Your Report (Ascending Order)'}
                   </span>
                   <span className="text-[11px] text-gray-400 font-medium">
-                    {language === 'hi' ? '५ सक्रिय सेवाएं' : '5 active tiers'}
+                    {language === 'hi' ? '5 सक्रिय सेवाएं' : '5 active tiers'}
                   </span>
                 </div>
 
