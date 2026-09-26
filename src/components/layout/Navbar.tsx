@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Sparkles, MessageSquare, User, Menu, X, Shield, LogOut, Headphones } from 'lucide-react';
+import { Sparkles, MessageSquare, User, Menu, X, Shield, LogOut, Headphones, Compass, Sun } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/context';
 import LanguageSwitcher from './LanguageSwitcher';
 import AstroVedaLogo from '@/components/brand/AstroVedaLogo';
@@ -78,6 +78,18 @@ export default function Navbar() {
             {t('navServices')}
           </Link>
           <Link
+            href="/daily-rashifal"
+            className={`text-sm font-medium transition-all relative py-1 flex items-center gap-1.5 active:scale-95 ${
+              pathname.startsWith('/daily-rashifal')
+                ? 'text-gold-400 after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-gold-400 after:rounded-full after:shadow-gold-glow'
+                : 'text-gray-300 hover:text-white'
+            }`}
+          >
+            <Compass className="w-3.5 h-3.5 text-gold-400" />
+            <span>{language === 'hi' ? 'दैनिक राशिफल' : 'Daily Rashifal'}</span>
+            <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">FREE</span>
+          </Link>
+          <Link
             href="/consultation/ai-chat"
             className={`text-sm font-medium transition-all relative py-1 flex items-center gap-1.5 active:scale-95 ${
               pathname.startsWith('/consultation/ai-chat')
@@ -86,8 +98,8 @@ export default function Navbar() {
             }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-gold-400 animate-pulse" />
-            <span>{language === 'hi' ? 'AI ज्योतिषी' : 'AI Astrologer'}</span>
-            <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-gold-500/20 text-gold-300 border border-gold-500/40">LIVE</span>
+            <span>{language === 'hi' ? 'लाइव चैट' : 'Chat Live'}</span>
+            <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-gold-500/20 text-gold-300 border border-gold-500/40 font-mono">₹99</span>
           </Link>
           <Link
             href="/about"
@@ -202,15 +214,26 @@ export default function Navbar() {
             {t('navServices')}
           </Link>
           <Link
+            href="/daily-rashifal"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center justify-between py-2 text-sm font-semibold text-emerald-400 hover:text-emerald-300"
+          >
+            <span className="flex items-center gap-2">
+              <Compass className="w-4 h-4 text-emerald-400" />
+              <span>{language === 'hi' ? 'दैनिक राशिफल' : 'Daily Rashifal'}</span>
+            </span>
+            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">FREE</span>
+          </Link>
+          <Link
             href="/consultation/ai-chat"
             onClick={() => setIsOpen(false)}
             className="flex items-center justify-between py-2 text-sm font-semibold text-gold-400 hover:text-gold-300"
           >
             <span className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-gold-400 animate-pulse" />
-              <span>{language === 'hi' ? 'AI वैदिक ज्योतिषी' : 'AI Vedic Astrologer'}</span>
+              <span>{language === 'hi' ? 'Chat Live (लाइव चैट)' : 'Chat Live'}</span>
             </span>
-            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-gold-500/20 text-gold-300 border border-gold-500/40">LIVE</span>
+            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-gold-500/20 text-gold-300 border border-gold-500/40 font-mono">₹99</span>
           </Link>
           <Link
             href="/about"

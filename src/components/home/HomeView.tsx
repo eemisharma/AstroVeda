@@ -27,6 +27,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Heart, Briefcase, Activity, Headphones, Shield } from 'lucide-react';
 import ScrollReveal from '@/components/common/ScrollReveal';
 import LiveActivityTicker from '@/components/home/LiveActivityTicker';
+import DailyRashifalPreview from '@/components/home/DailyRashifalPreview';
 
 interface HomeViewProps {
   services?: any[];
@@ -500,6 +501,9 @@ export default function HomeView({ services }: HomeViewProps) {
           </div>
         </div>
       </section>
+ 
+      {/* FREE DAILY RASHIFAL (TODAY'S HOROSCOPE) */}
+      <DailyRashifalPreview />
 
       {/* 3. HOW IT WORKS (4 STEPS) */}
       <section className="py-16 bg-navy-900/60 border-b border-navy-800/80 px-4 sm:px-6">

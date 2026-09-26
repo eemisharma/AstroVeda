@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Compass, FileText, User, Bot } from 'lucide-react';
+import { Home, Compass, User, Bot, Sparkles, Sun } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/context';
 
 export default function MobileNav() {
@@ -49,7 +49,7 @@ export default function MobileNav() {
           {pathname.startsWith('/services') && <span className="w-1.5 h-1.5 rounded-full bg-gold-400 mt-0.5 animate-pulse shadow-gold-glow" />}
         </Link>
 
-        {/* Center Prominent AI Chat Button */}
+        {/* Center Prominent Chat Live (₹99) Button */}
         <Link
           href="/consultation/ai-chat"
           className={`flex flex-col items-center justify-center -mt-3.5 py-0.5 rounded-xl transition-all active:scale-90 group ${
@@ -61,21 +61,25 @@ export default function MobileNav() {
               <Bot className="w-5 h-5 animate-pulse" />
             </div>
           </div>
-          <span className="text-[10px] font-bold leading-tight mt-0.5 text-gold-400">
-            {language === 'hi' ? 'AI चैट' : 'AI Chat'}
+          <span className="text-[10px] font-bold leading-tight mt-0.5 text-gold-400 flex items-center gap-0.5">
+            <span>{language === 'hi' ? 'लाइव चैट' : 'Chat Live'}</span>
+            <span className="text-[8px] bg-gold-500/20 px-1 rounded text-gold-300 border border-gold-500/30">₹99</span>
           </span>
         </Link>
 
-        {/* Reports */}
+        {/* Daily Rashifal [FREE] */}
         <Link
-          href={isAuth ? '/dashboard/orders' : '/login'}
+          href="/daily-rashifal"
           className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all active:scale-90 ${
-            pathname.startsWith('/dashboard/orders') ? 'text-gold-400 font-semibold' : 'text-gray-400 hover:text-gray-200'
+            pathname.startsWith('/daily-rashifal') ? 'text-gold-400 font-semibold' : 'text-gray-400 hover:text-gray-200'
           }`}
         >
-          <FileText className={`w-5 h-5 mb-0.5 transition-transform ${pathname.startsWith('/dashboard/orders') ? 'scale-110 drop-shadow-[0_0_8px_rgba(229,184,66,0.6)]' : ''}`} />
-          <span className="text-[10px] leading-tight">{t('navReports')}</span>
-          {pathname.startsWith('/dashboard/orders') && <span className="w-1.5 h-1.5 rounded-full bg-gold-400 mt-0.5 animate-pulse shadow-gold-glow" />}
+          <Sun className={`w-5 h-5 mb-0.5 transition-transform ${pathname.startsWith('/daily-rashifal') ? 'scale-110 drop-shadow-[0_0_8px_rgba(229,184,66,0.6)]' : ''}`} />
+          <span className="text-[10px] leading-tight flex items-center gap-0.5">
+            <span>{language === 'hi' ? 'राशिफल' : 'Rashifal'}</span>
+            <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+          </span>
+          {pathname.startsWith('/daily-rashifal') && <span className="w-1.5 h-1.5 rounded-full bg-gold-400 mt-0.5 animate-pulse shadow-gold-glow" />}
         </Link>
 
         {/* Profile / Dashboard */}

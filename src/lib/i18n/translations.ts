@@ -718,9 +718,9 @@ export const HINDI_SERVICES: Record<string, { name: string; description: string;
     deliveryTime: '30 मिनट',
   },
   'comprehensive-destiny': {
-    name: 'संपूर्ण जीवन व भाग्य मार्गदर्शन',
-    description: 'विस्तृत 12 भावों का विश्लेषण, धन योग, संबंध सामंजस्य, आगामी 2 वर्षों का दिशा-निर्देश और व्यावहारिक जीवन नियम।',
-    deliveryTime: '30 मिनट',
+    name: 'संपूर्ण जीवन मार्गदर्शन + Chat Live (लाइव चैट)',
+    description: 'विस्तृत 12 भावों का विश्लेषण, धन योग, संबंध सामंजस्य, आगामी 2 वर्षों का दिशा-निर्देश और आचार्य जी से तुरंत 1-on-1 Chat Live परामर्श।',
+    deliveryTime: '30 मिनट + तुरंत लाइव चैट',
   },
   'vedic-kundli-whatsapp': {
     name: 'विस्तृत वैदिक कुंडली + सीधा व्हाट्सएप परामर्श',

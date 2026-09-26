@@ -33,11 +33,11 @@ export const FALLBACK_SERVICES: OfficialService[] = [
   {
     id: 'srv-3',
     slug: 'comprehensive-destiny',
-    name: 'Comprehensive Destiny & House Analysis',
-    description: 'In-depth 12-house reading, wealth yogas, career trajectory, relationship compatibility dynamics, and 2-year forecast.',
+    name: 'Comprehensive Destiny Analysis + Chat Live',
+    description: 'In-depth 12-house reading, wealth yogas, career trajectory, relationship dynamics, 2-year forecast, and instant 1-on-1 Chat Live consultation.',
     price: 99,
     currency: 'INR',
-    deliveryTime: '30 mins',
+    deliveryTime: '30 mins + Instant Chat Live',
     active: true,
   },
   {

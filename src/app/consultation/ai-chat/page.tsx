@@ -18,6 +18,11 @@ import {
   Compass,
   CheckCircle2,
   HelpCircle,
+  Lock,
+  ShieldCheck,
+  CreditCard,
+  Flame,
+  ArrowRight,
 } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/context';
 
@@ -63,13 +68,16 @@ function AIChatContent() {
   const { language, setLanguage } = useLanguage();
   const orderId = searchParams.get('orderId');
 
+  const [isUnlocked, setIsUnlocked] = useState(false);
   const [profile, setProfile] = useState<ProfileState>(DEFAULT_DEMO_PROFILE);
   const [messages, setMessages] = useState<ChatMessageItem[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [isOrderLoading, setIsOrderLoading] = useState(Boolean(orderId));
+  const [isCheckingAccess, setIsCheckingAccess] = useState(true);
+  const [restoreOrderNumber, setRestoreOrderNumber] = useState('');
+  const [restoreError, setRestoreError] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -80,17 +88,21 @@ function AIChatContent() {
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isTyping]);
+    if (isUnlocked) {
+      scrollToBottom();
+    }
+  }, [messages, isTyping, isUnlocked]);
 
-  // Load Order Details if orderId is provided
+  // Check Payment & Access Status
   useEffect(() => {
+    setIsCheckingAccess(true);
+
+    // 1. If orderId is in query params, verify payment from database
     if (orderId) {
-      setIsOrderLoading(true);
       fetch(`/api/customer/orders/${orderId}`)
         .then((res) => res.json())
         .then((data) => {
-          if (data.order) {
+          if (data.order && (data.order.paymentStatus === 'SUCCESS' || data.order.status === 'PAID')) {
             const ord = data.order;
             const bp = ord.birthProfile;
             const astro = ord.analysis?.astrologyData || {};
@@ -111,18 +123,35 @@ function AIChatContent() {
               problemCategory: ord.service?.name || 'वैदिक परामर्श',
               orderNumber: ord.orderNumber,
             };
+
             setProfile(loadedProfile);
+            setIsUnlocked(true);
+            try {
+              localStorage.setItem('astroveda_chat_unlocked', 'true');
+            } catch {}
             initializeWelcomeMessage(loadedProfile);
           } else {
-            initializeWelcomeMessage(DEFAULT_DEMO_PROFILE);
+            setIsUnlocked(false);
           }
         })
         .catch(() => {
-          initializeWelcomeMessage(DEFAULT_DEMO_PROFILE);
+          setIsUnlocked(false);
         })
-        .finally(() => setIsOrderLoading(false));
+        .finally(() => setIsCheckingAccess(false));
     } else {
-      initializeWelcomeMessage(DEFAULT_DEMO_PROFILE);
+      // 2. Check if previous unlock exists in local storage
+      try {
+        const storedUnlock = localStorage.getItem('astroveda_chat_unlocked');
+        if (storedUnlock === 'true') {
+          setIsUnlocked(true);
+          initializeWelcomeMessage(DEFAULT_DEMO_PROFILE);
+        } else {
+          setIsUnlocked(false);
+        }
+      } catch {
+        setIsUnlocked(false);
+      }
+      setIsCheckingAccess(false);
     }
   }, [orderId, language]);
 
@@ -131,7 +160,7 @@ function AIChatContent() {
     const welcomeText = isHi
       ? `सादर प्रणाम **${prof.fullName} जी**! 🙏
 
-मैं **आचार्य AstroVeda** हूँ। आपकी जन्म कुंडली का प्राथमिक ढाँचा मेरे समक्ष उपस्थित है:
+मैं **आचार्य AstroVeda** हूँ। **Chat Live (लाइव चैट)** परामर्श में आपका स्वागत है। आपकी जन्म कुंडली का ढाँचा मेरे समक्ष उपस्थित है:
 * **लग्न:** ${prof.lagna}
 * **चन्द्र राशि:** ${prof.moonSign}
 * **जन्म नक्षत्र:** ${prof.nakshatra}
@@ -140,7 +169,7 @@ function AIChatContent() {
 आप अपने करियर, नौकरी, विवाह, प्रेम संबंध, आर्थिक स्थिति, स्वास्थ्य अथवा ग्रह शांति के संबंध में कोई भी प्रश्न निःसंकोच पूछ सकते हैं। आप नीचे दिए गए त्वरित प्रश्नों पर भी क्लिक कर सकते हैं:`
       : `Warm blessings and Namaste **${prof.fullName}**! 🙏
 
-I am **Acharya AstroVeda**. Your personal Vedic astrological chart is active in our session:
+I am **Acharya AstroVeda**. Welcome to **Chat Live** consultation. Your personal Vedic astrological chart is active in our session:
 * **Ascendant (Lagna):** ${prof.lagna}
 * **Moon Sign (Rashi):** ${prof.moonSign}
 * **Birth Nakshatra:** ${prof.nakshatra}
@@ -228,7 +257,7 @@ Feel free to ask any question regarding your career, promotions, relationships, 
   };
 
   const handleDownloadTranscript = () => {
-    const header = `=========================================\nASTROVEDA - PERSONALIZED AI VEDIC CONSULTATION\nClient: ${profile.fullName}\nLagna: ${profile.lagna} | Rashi: ${profile.moonSign}\nDasha: ${profile.currentDasha}\nDate: ${new Date().toLocaleDateString()}\n=========================================\n\n`;
+    const header = `=========================================\nASTROVEDA - CHAT LIVE VEDIC CONSULTATION\nClient: ${profile.fullName}\nLagna: ${profile.lagna} | Rashi: ${profile.moonSign}\nDasha: ${profile.currentDasha}\nDate: ${new Date().toLocaleDateString()}\n=========================================\n\n`;
     const body = messages
       .map((m) => `[${m.timestamp}] ${m.role === 'user' ? profile.fullName : 'आचार्य AstroVeda'}:\n${m.content}\n\n`)
       .join('---\n\n');
@@ -237,9 +266,47 @@ Feel free to ask any question regarding your career, promotions, relationships, 
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `AstroVeda_Consultation_${profile.fullName.replace(/\s+/g, '_')}.txt`;
+    a.download = `AstroVeda_ChatLive_${profile.fullName.replace(/\s+/g, '_')}.txt`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  // Instant Demo Unlock for testing
+  const handleInstantDemoUnlock = () => {
+    try {
+      localStorage.setItem('astroveda_chat_unlocked', 'true');
+    } catch {}
+    setIsUnlocked(true);
+    initializeWelcomeMessage(profile);
+  };
+
+  // Restore access via Order Number
+  const handleRestoreOrder = () => {
+    if (!restoreOrderNumber.trim()) {
+      setRestoreError(language === 'hi' ? 'कृपया सही ऑर्डर संख्या दर्ज करें' : 'Please enter a valid order number');
+      return;
+    }
+    // Verify order
+    fetch(`/api/customer/orders/${restoreOrderNumber.trim()}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.order && (data.order.paymentStatus === 'SUCCESS' || data.order.status === 'PAID')) {
+          router.push(`/consultation/ai-chat?orderId=${data.order.id}`);
+        } else {
+          setRestoreError(
+            language === 'hi'
+              ? 'ऑर्डर संख्या नहीं मिली या भुगतान लंबित है।'
+              : 'Order not found or payment pending.'
+          );
+        }
+      })
+      .catch(() => {
+        setRestoreError(
+          language === 'hi'
+            ? 'ऑर्डर संख्या नहीं मिली। कृपया पुनः जांचें।'
+            : 'Order could not be verified. Please check.'
+        );
+      });
   };
 
   const quickQuestionsHi = [
@@ -260,6 +327,169 @@ Feel free to ask any question regarding your career, promotions, relationships, 
 
   const quickQuestions = language === 'hi' ? quickQuestionsHi : quickQuestionsEn;
 
+  // -------------------------------------------------------------
+  // 1. LOADING SCREEN
+  // -------------------------------------------------------------
+  if (isCheckingAccess) {
+    return (
+      <div className="min-h-screen bg-navy-950 flex flex-col items-center justify-center p-4">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-gold-400 to-amber-600 flex items-center justify-center text-navy-950 shadow-gold-glow animate-pulse mb-4">
+          <Bot className="w-7 h-7" />
+        </div>
+        <p className="text-sm font-semibold text-gold-300">
+          {language === 'hi' ? 'Chat Live सत्यापन हो रहा है...' : 'Verifying Chat Live Access...'}
+        </p>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // 2. PAYWALL / PAYMENT REQUIRED SCREEN (₹99)
+  // -------------------------------------------------------------
+  if (!isUnlocked) {
+    return (
+      <div className="min-h-screen bg-navy-950 flex items-center justify-center p-4 sm:p-6 relative overflow-hidden">
+        {/* Ambient Cosmic Orbs */}
+        <div className="absolute top-1/4 -left-32 w-80 h-80 bg-gold-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 -right-32 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="w-full max-w-xl bg-navy-900 border border-gold-500/40 rounded-3xl p-6 sm:p-8 space-y-6 shadow-gold-glow-lg text-center relative z-10 animate-page-enter">
+          {/* Lock & Astrologer Avatar */}
+          <div className="relative w-20 h-20 mx-auto mb-2">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-gold-400 via-amber-500 to-gold-600 flex items-center justify-center text-navy-950 shadow-gold-glow">
+              <Bot className="w-10 h-10" />
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-navy-950 border-2 border-gold-400 flex items-center justify-center text-gold-400 shadow-sm">
+              <Lock className="w-3.5 h-3.5" />
+            </div>
+          </div>
+
+          <div>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-500/20 text-gold-300 border border-gold-500/30 text-xs font-bold uppercase tracking-widest">
+              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+              <span>{language === 'hi' ? 'सशुल्क सेवा • Chat Live' : 'Premium Service • Chat Live'}</span>
+            </span>
+
+            <h1 className="text-2xl sm:text-3xl font-black text-white mt-3 mb-2 font-heading">
+              {language === 'hi' ? 'आचार्य जी से Chat Live परामर्श' : 'Chat Live with Acharya AstroVeda'}
+            </h1>
+
+            <p className="text-xs sm:text-sm text-gray-300 leading-relaxed max-w-md mx-auto">
+              {language === 'hi'
+                ? 'अपनी जन्म कुंडली के आधार पर करियर, विवाह, प्रेम, धन व ग्रह शांति के सभी सवालों के तुरंत सटीक वैदिक समाधान पाएं।'
+                : 'Get immediate, personalized Vedic astrological answers based on your actual birth chart, Lagna, and active Mahadasha.'}
+            </p>
+          </div>
+
+          {/* Pricing Highlight (₹99) */}
+          <div className="p-5 rounded-2xl bg-gradient-to-r from-gold-500/15 via-amber-500/20 to-gold-500/15 border border-gold-400/60 flex items-center justify-between text-left shadow-gold-glow">
+            <div>
+              <span className="text-[11px] font-bold text-gray-300 uppercase tracking-wider block">
+                {language === 'hi' ? '1-on-1 लाइव परामर्श' : '1-on-1 Live Consultation'}
+              </span>
+              <strong className="text-white font-heading text-sm sm:text-base">
+                {language === 'hi' ? 'असीमित प्रश्न • तुरंत समाधान' : 'Unlimited Questions • Instant Answers'}
+              </strong>
+            </div>
+
+            <div className="text-right">
+              <span className="text-xs text-gray-400 line-through mr-1.5">₹299</span>
+              <span className="text-2xl sm:text-3xl font-black text-gold-400 font-mono">₹99</span>
+            </div>
+          </div>
+
+          {/* Value Highlights */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-left text-xs text-gray-300">
+            <div className="flex items-center gap-2 p-2 rounded-xl bg-navy-950/60 border border-navy-800">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{language === 'hi' ? 'व्यक्तिगत कुंडली का लाइव अध्ययन' : 'Live Natal Chart Synthesis'}</span>
+            </div>
+            <div className="flex items-center gap-2 p-2 rounded-xl bg-navy-950/60 border border-navy-800">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{language === 'hi' ? 'करियर, विवाह व धन पर मार्गदर्शन' : 'Career, Marriage & Wealth Forecast'}</span>
+            </div>
+            <div className="flex items-center gap-2 p-2 rounded-xl bg-navy-950/60 border border-navy-800">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{language === 'hi' ? 'वैदिक उपाय, रत्न व मंत्र सुझाव' : 'Remedies, Mantras & Gemstones'}</span>
+            </div>
+            <div className="flex items-center gap-2 p-2 rounded-xl bg-navy-950/60 border border-navy-800">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{language === 'hi' ? 'चैट ट्रांसक्रिप्ट डाउनलोड सुविधा' : 'Full Chat Transcript Download'}</span>
+            </div>
+          </div>
+
+          {/* Primary Action Button: Pay ₹99 */}
+          <div className="space-y-3 pt-2">
+            <Link
+              href="/checkout/comprehensive-destiny"
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-gold-400 via-amber-500 to-gold-500 text-navy-950 font-black text-sm sm:text-base hover:brightness-110 shadow-gold-glow flex items-center justify-center gap-2 transition-all active:scale-95 animate-luxury-glow"
+            >
+              <CreditCard className="w-5 h-5" />
+              <span>
+                {language === 'hi'
+                  ? '₹99 का भुगतान करें और Chat Live शुरू करें'
+                  : 'Pay ₹99 & Start Chat Live'}
+              </span>
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+
+            {/* Test Mode / Instant Demo Unlock Button */}
+            <button
+              onClick={handleInstantDemoUnlock}
+              className="w-full py-2.5 px-4 rounded-xl bg-navy-800/80 hover:bg-navy-800 border border-gold-500/30 text-gold-300 text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-95"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-gold-400" />
+              <span>
+                {language === 'hi'
+                  ? '⚡ तुरंत टेस्ट अनलॉक (Demo / Simulator Access)'
+                  : '⚡ Instant Demo Unlock (Simulator Access)'}
+              </span>
+            </button>
+          </div>
+
+          {/* Restore Previous Order */}
+          <div className="pt-3 border-t border-navy-800 space-y-2">
+            <p className="text-[11px] text-gray-400">
+              {language === 'hi'
+                ? 'क्या आप पहले से ₹99 का भुगतान कर चुके हैं?'
+                : 'Already paid for your consultation?'}
+            </p>
+            <div className="flex gap-2 max-w-sm mx-auto">
+              <input
+                type="text"
+                value={restoreOrderNumber}
+                onChange={(e) => {
+                  setRestoreOrderNumber(e.target.value);
+                  setRestoreError('');
+                }}
+                placeholder={language === 'hi' ? 'ऑर्डर ID दर्ज करें...' : 'Enter Order ID...'}
+                className="flex-1 bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-400"
+              />
+              <button
+                onClick={handleRestoreOrder}
+                className="px-4 py-2 rounded-xl bg-navy-800 hover:bg-navy-700 text-gold-400 font-bold text-xs border border-gold-500/30 transition-all active:scale-95 shrink-0"
+              >
+                {language === 'hi' ? 'सत्यापित करें' : 'Verify'}
+              </button>
+            </div>
+            {restoreError && <p className="text-[11px] text-rose-400">{restoreError}</p>}
+          </div>
+
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>{language === 'hi' ? 'मुख्य पृष्ठ पर वापस जाएं' : 'Return to Home'}</span>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // 3. UNLOCKED CHAT LIVE INTERFACE
+  // -------------------------------------------------------------
   return (
     <div className="min-h-screen bg-navy-950 flex flex-col justify-between text-gray-100 relative">
       {/* Top Consultation Navigation Bar */}
@@ -289,12 +519,12 @@ Feel free to ask any question regarding your career, promotions, relationships, 
                     {language === 'hi' ? 'आचार्य AstroVeda' : 'Acharya AstroVeda'}
                   </h1>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gold-500/20 text-gold-300 border border-gold-500/30">
-                    AI Vedic Master
+                    Chat Live • ₹99
                   </span>
                 </div>
                 <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-                  {language === 'hi' ? 'सक्रिय परामर्श • व्यक्तिगत कुंडली आधारित' : 'Active • Personalized Kundali Connected'}
+                  {language === 'hi' ? 'लाइव चैट सक्रिय • कुंडली कनेक्टेड' : 'Chat Live Active • Kundali Connected'}
                 </p>
               </div>
             </div>
@@ -372,8 +602,8 @@ Feel free to ask any question regarding your career, promotions, relationships, 
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>
                 {language === 'hi'
-                  ? 'आपका परामर्श सत्यापित है। आचार्य जी आपकी संपूर्ण कुंडली का अध्ययन करके उत्तर दे रहे हैं।'
-                  : 'Your consultation is verified. Acharya is reviewing your full birth chart.'}
+                  ? 'आपका ₹99 Chat Live परामर्श सत्यापित है। आचार्य जी आपकी कुंडली का अध्ययन करके उत्तर दे रहे हैं।'
+                  : 'Your ₹99 Chat Live consultation is verified. Acharya is reviewing your full birth chart.'}
               </span>
             </div>
             <Link
@@ -411,7 +641,7 @@ Feel free to ask any question regarding your career, promotions, relationships, 
                   <div className="flex items-center justify-between text-xs text-gold-400 font-semibold mb-2 pb-1.5 border-b border-navy-800">
                     <span className="flex items-center gap-1.5 font-heading">
                       <Sparkles className="w-3.5 h-3.5 text-gold-400" />
-                      {language === 'hi' ? 'आचार्य AstroVeda' : 'Acharya AstroVeda'}
+                      {language === 'hi' ? 'आचार्य AstroVeda • Chat Live' : 'Acharya AstroVeda • Chat Live'}
                     </span>
                     <button
                       onClick={() => handleCopy(msg.id, msg.content)}
@@ -546,8 +776,8 @@ Feel free to ask any question regarding your career, promotions, relationships, 
 
             <p className="text-xs text-gray-300">
               {language === 'hi'
-                ? 'AI ज्योतिषी इन्हीं विवरणों के आधार पर आपकी जन्म पत्रिका का विश्लेषण करेगा।'
-                : 'Acharya AI personalizes every response based on these astrological attributes.'}
+                ? 'आचार्य जी इन्हीं विवरणों के आधार पर आपकी जन्म पत्रिका का विश्लेषण करेंगे।'
+                : 'Acharya personalizes every response based on these astrological attributes.'}
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
