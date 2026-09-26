@@ -21,12 +21,13 @@ import { ChartData } from '@/lib/astrology/types';
 import { useLanguage } from '@/lib/i18n/context';
 import { CONSULTATION_CATEGORIES } from '@/lib/constants/categories';
 import { HINDI_SERVICES } from '@/lib/i18n/translations';
+import { FALLBACK_SERVICES } from '@/lib/constants/services';
 import CustomerCareDrawer from '@/components/customer-care/CustomerCareDrawer';
 import { useState, useRef, useEffect } from 'react';
 import { Heart, Briefcase, Activity, Headphones, Shield } from 'lucide-react';
 
 interface HomeViewProps {
-  services: any[];
+  services?: any[];
 }
 
 const sampleDemoChart: ChartData = {
@@ -68,19 +69,19 @@ export default function HomeView({ services }: HomeViewProps) {
   const { t, language } = useLanguage();
   const [careDrawerOpen, setCareDrawerOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  // Guarantee all 5 services are always available
+  const activeServices = services && services.length > 0 ? services : FALLBACK_SERVICES;
+
   const [selectedServiceSlug, setSelectedServiceSlug] = useState<string>(
-    services[0]?.slug || 'quick-kundli-glance'
+    activeServices[0]?.slug || 'quick-kundli-glance'
   );
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const selectedService =
-    services.find((s) => s.slug === selectedServiceSlug) ||
-    services[0] || {
-      slug: 'quick-kundli-glance',
-      price: 49,
-      name: 'Quick Kundli Glance & Planetary Insights',
-      deliveryTime: '30 mins',
-    };
+    activeServices.find((s) => s.slug === selectedServiceSlug) ||
+    activeServices[0] ||
+    FALLBACK_SERVICES[0];
 
   const primaryService = selectedService;
 
@@ -258,7 +259,7 @@ export default function HomeView({ services }: HomeViewProps) {
                 </div>
 
                 <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
-                  {services.map((s) => {
+                  {activeServices.map((s) => {
                     const isSelected = s.slug === selectedService.slug;
                     const isPremium = s.price === 499 || s.slug === 'premium-master-horoscope';
                     const isWhatsApp = s.price === 149 || s.slug === 'vedic-kundli-whatsapp';
@@ -271,11 +272,6 @@ export default function HomeView({ services }: HomeViewProps) {
                         onClick={() => {
                           setSelectedServiceSlug(s.slug);
                           setDropdownOpen(false);
-                          if (isPremium) {
-                            setCareDrawerOpen(true);
-                          } else {
-                            window.location.href = `/checkout/${s.slug}`;
-                          }
                         }}
                         className={`p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                           isSelected
@@ -323,13 +319,42 @@ export default function HomeView({ services }: HomeViewProps) {
 
                         <div className="shrink-0 flex items-center gap-2">
                           {isSelected ? (
-                            <div className="w-7 h-7 rounded-full bg-gold-500 text-navy-950 flex items-center justify-center font-bold">
-                              <Check className="w-4 h-4 stroke-[3]" />
-                            </div>
+                            <span className="px-2.5 py-1 rounded-xl bg-gold-500 text-navy-950 text-xs font-bold flex items-center gap-1">
+                              <Check className="w-3.5 h-3.5 stroke-[3]" />
+                              <span>{language === 'hi' ? 'चयनित' : 'Selected'}</span>
+                            </span>
                           ) : (
-                            <div className="w-7 h-7 rounded-full bg-navy-800 border border-navy-700 text-gray-400 flex items-center justify-center group-hover:text-gold-400 group-hover:border-gold-500">
+                            <span className="px-2.5 py-1 rounded-xl bg-navy-800 text-gold-300 border border-navy-700 text-xs font-semibold hover:bg-gold-500 hover:text-navy-950 transition-colors">
+                              {language === 'hi' ? 'चुनें' : 'Select'}
+                            </span>
+                          )}
+
+                          {/* Direct Quick Link to Checkout */}
+                          {isPremium ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDropdownOpen(false);
+                                setCareDrawerOpen(true);
+                              }}
+                              className="p-2 rounded-xl bg-navy-800 hover:bg-amber-500 hover:text-navy-950 text-amber-300 border border-amber-500/30 transition-all text-xs font-bold"
+                              title={language === 'hi' ? 'विवरण देखें' : 'View details'}
+                            >
                               <ArrowRight className="w-3.5 h-3.5" />
-                            </div>
+                            </button>
+                          ) : (
+                            <Link
+                              href={`/checkout/${s.slug}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDropdownOpen(false);
+                              }}
+                              className="p-2 rounded-xl bg-gold-500/20 hover:bg-gold-500 hover:text-navy-950 text-gold-300 border border-gold-500/40 transition-all"
+                              title={language === 'hi' ? 'सीधे चेकआउट करें' : 'Proceed directly'}
+                            >
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </Link>
                           )}
                         </div>
                       </div>
@@ -340,8 +365,8 @@ export default function HomeView({ services }: HomeViewProps) {
                 <div className="mt-3 pt-2.5 border-t border-navy-800 flex items-center justify-between text-xs text-gray-400 px-2">
                   <span>
                     {language === 'hi'
-                      ? 'किसी भी रिपोर्ट पर क्लिक कर सीधे चेकआउट करें'
-                      : 'Click any tier to proceed to checkout'}
+                      ? 'किसी भी रिपोर्ट पर क्लिक कर चुनें या सीधे चेकआउट करें'
+                      : 'Click any tier to select or proceed directly'}
                   </span>
                   <span className="text-gold-400 font-bold font-mono">
                     ₹49 • ₹89 • ₹99 • ₹149 • ₹499
@@ -520,7 +545,7 @@ export default function HomeView({ services }: HomeViewProps) {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {services.map((s, idx) => {
+            {activeServices.map((s, idx) => {
               const isPremium = s.price === 499 || s.slug === 'premium-master-horoscope';
               const isWhatsApp = s.price === 149 || s.slug === 'vedic-kundli-whatsapp';
 
