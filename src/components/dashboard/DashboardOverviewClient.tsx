@@ -1,8 +1,18 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/i18n/context';
-import { Sparkles, Clock, CheckCircle2, ArrowRight, FileText, Compass } from 'lucide-react';
+import {
+  Sparkles,
+  Clock,
+  CheckCircle2,
+  ArrowRight,
+  FileText,
+  Compass,
+  Bot,
+  MessageSquare,
+} from 'lucide-react';
 
 interface OrderItem {
   id: string;
@@ -14,8 +24,8 @@ interface OrderItem {
     name: string;
     slug: string;
   };
-  report: {
-    id: string;
+  report?: {
+    id?: string;
   } | null;
 }
 
@@ -25,11 +35,34 @@ interface DashboardOverviewClientProps {
 
 export default function DashboardOverviewClient({ orders }: DashboardOverviewClientProps) {
   const { t, language } = useLanguage();
+  const [allOrders, setAllOrders] = useState<OrderItem[]>(orders);
 
-  const activeOrders = orders.filter(
+  // Requirement 1: Once paid for any service, ensure it is permanently accessible in dashboard
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('astroveda_customer_orders');
+      if (stored) {
+        const localOrders: OrderItem[] = JSON.parse(stored);
+        if (Array.isArray(localOrders) && localOrders.length > 0) {
+          setAllOrders((prev) => {
+            const existingIds = new Set(prev.map((o) => o.id));
+            const existingNums = new Set(prev.map((o) => o.orderNumber));
+            const additions = localOrders.filter(
+              (lo) => lo && !existingIds.has(lo.id) && !existingNums.has(lo.orderNumber)
+            );
+            return [...prev, ...additions];
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to merge local customer orders:', e);
+    }
+  }, [orders]);
+
+  const activeOrders = allOrders.filter(
     (o) => o.status === 'PROCESSING' || o.status === 'PAID'
   );
-  const readyReports = orders.filter(
+  const readyReports = allOrders.filter(
     (o) => o.status === 'ANALYSIS_READY' || o.status === 'DELIVERED'
   );
 
@@ -45,13 +78,15 @@ export default function DashboardOverviewClient({ orders }: DashboardOverviewCli
           return 'प्रक्रियाधीन';
         case 'ANALYSIS_READY':
         case 'DELIVERED':
-          return 'रिपोर्ट तैयार';
+          return 'सक्रिय / तैयार';
         default:
           return status;
       }
     }
     return status;
   };
+
+  const whatsappPhone = process.env.NEXT_PUBLIC_WHATSAPP_SUPPORT_PHONE || '919876543210';
 
   return (
     <div className="space-y-8">
@@ -63,7 +98,7 @@ export default function DashboardOverviewClient({ orders }: DashboardOverviewCli
             <Sparkles className="w-4 h-4 text-gold-400" />
           </div>
           <div className="text-2xl font-black text-white font-heading">
-            {formatNumber(orders.length)}
+            {formatNumber(allOrders.length)}
           </div>
         </div>
 
@@ -88,13 +123,13 @@ export default function DashboardOverviewClient({ orders }: DashboardOverviewCli
         </div>
       </div>
 
-      {/* Recent / Active Orders */}
+      {/* Recent / Active Orders with Separate Service Access */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-white tracking-tight font-heading">
             {t('myConsultationsTitle')}
           </h2>
-          {orders.length > 0 && (
+          {allOrders.length > 0 && (
             <Link
               href="/dashboard/orders"
               className="text-xs text-gold-400 hover:underline font-semibold"
@@ -104,7 +139,7 @@ export default function DashboardOverviewClient({ orders }: DashboardOverviewCli
           )}
         </div>
 
-        {orders.length === 0 ? (
+        {allOrders.length === 0 ? (
           <div className="bg-navy-900 border border-navy-800 rounded-3xl p-8 text-center">
             <div className="w-12 h-12 rounded-2xl bg-gold-500/10 border border-gold-500/30 flex items-center justify-center text-gold-400 mx-auto mb-3">
               <Compass className="w-6 h-6" />
@@ -125,9 +160,28 @@ export default function DashboardOverviewClient({ orders }: DashboardOverviewCli
           </div>
         ) : (
           <div className="space-y-4">
-            {orders.map((order) => {
+            {allOrders.map((order) => {
               const isReady =
                 order.status === 'ANALYSIS_READY' || order.status === 'DELIVERED';
+              const slug = order.service?.slug || '';
+              const isChatTier =
+                slug === 'chat-live' ||
+                slug === 'ai-chat' ||
+                slug === 'comprehensive-destiny' ||
+                order.amount === 99;
+              const isWhatsAppTier =
+                slug === 'vedic-kundli-whatsapp' || order.amount === 149;
+              const isReportOnlyTier =
+                slug === 'quick-kundli-glance' ||
+                slug === 'life-direction-transit' ||
+                order.amount === 49 ||
+                order.amount === 89;
+
+              const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
+                language === 'hi'
+                  ? `नमस्ते AstroVeda, मेरे ऑर्डर #${order.orderNumber} (₹149 व्हाट्सएप परामर्श) के तहत ज्योतिषीय परामर्श आरंभ करें।`
+                  : `Hello AstroVeda, I would like to initiate my consultation for Order #${order.orderNumber}.`
+              )}`;
 
               return (
                 <div
@@ -148,6 +202,16 @@ export default function DashboardOverviewClient({ orders }: DashboardOverviewCli
                       >
                         {getStatusDisplay(order.status)}
                       </span>
+                      {isChatTier && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gold-500/15 text-gold-300 border border-gold-500/30">
+                          Chat Live (₹99)
+                        </span>
+                      )}
+                      {isWhatsAppTier && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                          WhatsApp (₹149)
+                        </span>
+                      )}
                     </div>
 
                     <h3 className="text-base font-bold text-white font-heading">
@@ -168,22 +232,49 @@ export default function DashboardOverviewClient({ orders }: DashboardOverviewCli
                     </div>
                   </div>
 
-                  <div>
-                    {isReady ? (
+                  {/* Separate Action Buttons according to Purchased Service */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* 1. Chat Live Tier (₹99) Actions */}
+                    {isChatTier && (
                       <Link
-                        href={`/dashboard/orders/${order.id}`}
-                        className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-bold text-xs hover:brightness-110 shadow-gold-glow flex items-center justify-center gap-1.5 transition-all"
+                        href={`/consultation/ai-chat?orderId=${order.id}`}
+                        className="py-2.5 px-4 rounded-xl bg-gradient-to-r from-gold-400 via-amber-500 to-gold-500 text-navy-950 font-black text-xs hover:brightness-110 shadow-gold-glow flex items-center justify-center gap-1.5 transition-all active:scale-95"
                       >
-                        <FileText className="w-4 h-4" />
-                        <span>{t('viewReportText')}</span>
+                        <Bot className="w-4 h-4" />
+                        <span>{language === 'hi' ? 'Chat Live शुरू करें' : 'Start Chat Live'}</span>
                       </Link>
-                    ) : (
-                      <Link
-                        href={`/dashboard/orders/${order.id}`}
-                        className="py-2.5 px-5 rounded-xl bg-navy-800 border border-navy-700 text-gray-300 font-semibold text-xs hover:bg-navy-750 flex items-center justify-center gap-1.5 transition-colors"
+                    )}
+
+                    {/* 2. WhatsApp Tier (₹149) Actions */}
+                    {isWhatsAppTier && (
+                      <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95"
                       >
-                        <Clock className="w-4 h-4 text-amber-400" />
-                        <span>{t('viewStatusText')}</span>
+                        <MessageSquare className="w-4 h-4" />
+                        <span>{language === 'hi' ? 'व्हाट्सएप चैट' : 'WhatsApp Chat'}</span>
+                      </a>
+                    )}
+
+                    {/* Standard Report View for all orders */}
+                    <Link
+                      href={`/dashboard/orders/${order.id}`}
+                      className="py-2.5 px-4 rounded-xl bg-navy-800 border border-navy-700 hover:border-gold-500/40 text-gray-200 hover:text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-all"
+                    >
+                      <FileText className="w-4 h-4 text-gold-400" />
+                      <span>{language === 'hi' ? 'रिपोर्ट देखें' : 'View Report'}</span>
+                    </Link>
+
+                    {/* Report Only Upsell Option */}
+                    {isReportOnlyTier && (
+                      <Link
+                        href="/checkout/comprehensive-destiny"
+                        className="py-2 px-3 rounded-xl bg-gold-500/10 border border-gold-500/30 text-gold-300 hover:bg-gold-500/20 text-[11px] font-bold flex items-center gap-1 transition-all"
+                      >
+                        <Sparkles className="w-3 h-3 text-gold-400" />
+                        <span>{language === 'hi' ? '+ Chat Live (₹99)' : '+ Chat Live (₹99)'}</span>
                       </Link>
                     )}
                   </div>

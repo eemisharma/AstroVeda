@@ -2,37 +2,77 @@
 
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/lib/i18n/context';
-import { Clock, CheckCircle2, Sparkles, FastForward, Compass, FileText, ArrowRight } from 'lucide-react';
+import { Clock, CheckCircle2, Sparkles, FastForward, Compass, FileText, ArrowRight, MessageSquare, Bell } from 'lucide-react';
 
 interface CountdownReportTimerProps {
-  createdAt: string | Date;
+  createdAt?: string | Date;
   onComplete?: () => void;
   orderNumber: string;
+  customerPhone?: string;
+  customerName?: string;
+  orderId?: string;
 }
 
 export default function CountdownReportTimer({
   createdAt,
   onComplete,
   orderNumber,
+  customerPhone,
+  customerName = 'प्रिय जातक',
+  orderId,
 }: CountdownReportTimerProps) {
   const { t, language } = useLanguage();
   const DURATION_SECONDS = 30 * 60; // 30 minutes
 
-  const [remainingSeconds, setRemainingSeconds] = useState<number>(() => {
-    try {
-      const createdTime = new Date(createdAt).getTime();
-      const now = Date.now();
-      const elapsed = Math.floor((now - createdTime) / 1000);
-      return Math.max(0, DURATION_SECONDS - elapsed);
-    } catch {
-      return DURATION_SECONDS;
-    }
-  });
-
+  // Requirement 2: Whenever the user navigates to live chat and returns to this page,
+  // the timer resets and starts from the beginning (30:00 minutes).
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(DURATION_SECONDS);
   const [isBypassed, setIsBypassed] = useState(false);
+  const [notificationSent, setNotificationSent] = useState(false);
+  const [showInAppPush, setShowInAppPush] = useState(false);
+
+  // Request browser notification permission on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+  }, []);
+
+  const triggerPushNotifications = () => {
+    if (notificationSent) return;
+    setNotificationSent(true);
+    setShowInAppPush(true);
+
+    // 1. Browser Website Push Notification
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        try {
+          new Notification('AstroVeda • आपकी वैदिक रिपोर्ट तैयार है! ✨', {
+            body: `ऑर्डर #${orderNumber}: आपकी संपूर्ण जन्म कुंडली एवं ग्रह दशा विश्लेषण तैयार हो चुका है।`,
+            icon: '/favicon.ico',
+          });
+        } catch (e) {
+          console.warn('Native notification failed:', e);
+        }
+      }
+    }
+
+    // 2. WhatsApp Push Notification to Customer's Mobile Number
+    fetch('/api/customer/notify-report-ready', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderNumber,
+        orderId,
+        phone: customerPhone,
+        customerName,
+      }),
+    }).catch(() => {});
+  };
 
   useEffect(() => {
     if (remainingSeconds <= 0 || isBypassed) {
+      triggerPushNotifications();
       if (onComplete) onComplete();
       return;
     }
@@ -41,6 +81,7 @@ export default function CountdownReportTimer({
       setRemainingSeconds((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
+          triggerPushNotifications();
           if (onComplete) onComplete();
           return 0;
         }
@@ -76,33 +117,74 @@ export default function CountdownReportTimer({
 
   const isReady = remainingSeconds === 0 || isBypassed;
 
+  const whatsappPhone = process.env.NEXT_PUBLIC_WHATSAPP_SUPPORT_PHONE || '919876543210';
+  const whatsappNotificationUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
+    language === 'hi'
+      ? `🌟 नमस्ते AstroVeda! मेरे ऑर्डर #${orderNumber} की वैदिक रिपोर्ट तैयार हो चुकी है। कृपया मेरी रिपोर्ट की कॉपी मेरे व्हाट्सएप पर भी भेजें।`
+      : `🌟 Hello AstroVeda! My Vedic consultation report for Order #${orderNumber} is now ready. Please send a copy to my WhatsApp.`
+  )}`;
+
   if (isReady) {
     return (
-      <div className="bg-gradient-to-b from-navy-900 via-navy-900 to-navy-950 border border-emerald-500/50 rounded-3xl p-6 sm:p-8 text-center shadow-gold-glow animate-fade-in">
-        <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 mx-auto mb-4 shadow-lg animate-bounce">
+      <div className="bg-gradient-to-b from-navy-900 via-navy-900 to-navy-950 border border-emerald-500/50 rounded-3xl p-6 sm:p-8 text-center shadow-gold-glow animate-fade-in space-y-4">
+        {/* Floating In-App Push Notification Banner */}
+        {showInAppPush && (
+          <div className="p-3.5 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs flex items-center justify-between gap-3 text-left animate-bounce">
+            <div className="flex items-center gap-2">
+              <Bell className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>
+                {language === 'hi'
+                  ? `🔔 नई सूचना: ऑर्डर #${orderNumber} की रिपोर्ट तैयार हो चुकी है!`
+                  : `🔔 Alert: Your report for Order #${orderNumber} is ready!`}
+              </span>
+            </div>
+            <button
+              onClick={() => setShowInAppPush(false)}
+              className="text-gray-400 hover:text-white text-xs px-2"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 mx-auto shadow-lg animate-bounce">
           <CheckCircle2 className="w-8 h-8" />
         </div>
-        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block mb-1">
+        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block">
           {language === 'hi' ? 'गणना पूर्ण' : 'Analysis Ready'}
         </span>
-        <h2 className="text-xl sm:text-2xl font-black text-white font-heading mb-2">
+        <h2 className="text-xl sm:text-2xl font-black text-white font-heading">
           {t('timerCompletedTitle')}
         </h2>
-        <p className="text-xs sm:text-sm text-gray-300 max-w-md mx-auto mb-6 leading-relaxed">
+        <p className="text-xs sm:text-sm text-gray-300 max-w-md mx-auto leading-relaxed">
           {t('timerCompletedSubtitle')}
         </p>
-        <button
-          onClick={() => {
-            if (onComplete) onComplete();
-            window.location.reload();
-          }}
-          type="button"
-          className="inline-flex items-center gap-2 py-3 px-8 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-bold text-sm hover:brightness-110 shadow-gold-glow transition-all"
-        >
-          <FileText className="w-4 h-4" />
-          <span>{t('viewReportNow')}</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <button
+            onClick={() => {
+              if (onComplete) onComplete();
+              window.location.reload();
+            }}
+            type="button"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 py-3 px-8 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-bold text-sm hover:brightness-110 shadow-gold-glow transition-all"
+          >
+            <FileText className="w-4 h-4" />
+            <span>{t('viewReportNow')}</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+
+          {/* WhatsApp Push Notification Link */}
+          <a
+            href={whatsappNotificationUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg transition-all"
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>{language === 'hi' ? 'व्हाट्सएप पर रिपोर्ट प्राप्त करें' : 'Get Report on WhatsApp'}</span>
+          </a>
+        </div>
       </div>
     );
   }
@@ -208,6 +290,7 @@ export default function CountdownReportTimer({
         <button
           onClick={() => {
             setIsBypassed(true);
+            triggerPushNotifications();
             if (onComplete) onComplete();
           }}
           type="button"

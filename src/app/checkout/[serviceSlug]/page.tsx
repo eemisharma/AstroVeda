@@ -16,6 +16,8 @@ import {
   ShieldCheck,
   AlertTriangle,
   CreditCard,
+  Lock,
+  CheckCircle2,
 } from 'lucide-react';
 import PaymentSimulatorModal from '@/components/checkout/PaymentSimulatorModal';
 import { getStoredUtm } from '@/lib/marketing/utm';
@@ -37,12 +39,19 @@ export default function CheckoutPage() {
   const serviceSlug = params.serviceSlug as string;
 
   const matchedFallback =
-    DEFAULT_SERVICES.find((s) => s.slug === serviceSlug) || DEFAULT_SERVICES[3];
+    DEFAULT_SERVICES.find((s) => s.slug === serviceSlug) || DEFAULT_SERVICES[2];
 
   const [service, setService] = useState<any>(matchedFallback);
   const [allServices, setAllServices] = useState<any[]>(DEFAULT_SERVICES);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
+
+  // Authentication State for Step 1
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [authMode, setAuthMode] = useState<'signup' | 'login'>('signup');
+  const [password, setPassword] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -89,7 +98,7 @@ export default function CheckoutPage() {
       .catch((err) => {
         console.warn('Using local fallback for service:', serviceSlug, err);
         const fallback =
-          DEFAULT_SERVICES.find((s) => s.slug === serviceSlug) || DEFAULT_SERVICES[3];
+          DEFAULT_SERVICES.find((s) => s.slug === serviceSlug) || DEFAULT_SERVICES[2];
         setService(fallback);
       })
       .finally(() => setLoading(false));
@@ -98,6 +107,7 @@ export default function CheckoutPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.user) {
+          setCurrentUser(data.user);
           setFormData((prev) => ({
             ...prev,
             name: prev.name || data.user.name || '',
@@ -116,21 +126,91 @@ export default function CheckoutPage() {
     }
   };
 
-  const handleNextToBirthInfo = (e: React.FormEvent) => {
+  // Step 1: Sign Up Submission
+  const handleSignUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError('');
     const errors: Record<string, string> = {};
     if (!formData.name.trim()) errors.name = language === 'hi' ? 'कृपया अपना पूरा नाम दर्ज करें' : 'Please enter your full name';
     if (!formData.email.trim() || !formData.email.includes('@')) errors.email = language === 'hi' ? 'वैध ईमेल पता आवश्यक है' : 'Valid email is required';
     if (!formData.phone.trim() || formData.phone.length < 10) errors.phone = language === 'hi' ? 'वैध 10-अंकीय व्हाट्सएप नंबर आवश्यक है' : 'Valid 10-digit WhatsApp number is required';
+    if (!password || password.length < 6) errors.password = language === 'hi' ? 'पासवर्ड कम से कम 6 अक्षरों का होना चाहिए' : 'Password must be at least 6 characters';
 
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
-    setStep(2);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    setAuthLoading(true);
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          phone: formData.phone.trim(),
+          password: password.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Signup failed');
+      }
+      setCurrentUser(data.user);
+      setStep(2);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err: any) {
+      setAuthError(err.message);
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
+  // Step 1: Sign In Submission
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    const errors: Record<string, string> = {};
+    if (!formData.email.trim() || !formData.email.includes('@')) errors.email = language === 'hi' ? 'वैध ईमेल पता आवश्यक है' : 'Valid email is required';
+    if (!password) errors.password = language === 'hi' ? 'कृपया अपना पासवर्ड दर्ज करें' : 'Please enter your password';
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
+    setAuthLoading(true);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email.trim(),
+          password: password.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Login failed');
+      }
+      setCurrentUser(data.user);
+      setFormData((prev) => ({
+        ...prev,
+        name: data.user.name || prev.name,
+        email: data.user.email || prev.email,
+        phone: data.user.phone || prev.phone,
+      }));
+      setStep(2);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err: any) {
+      setAuthError(err.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Step 2 -> Step 3
   const handleNextToSummary = (e: React.FormEvent) => {
     e.preventDefault();
     const errors: Record<string, string> = {};
@@ -181,7 +261,7 @@ export default function CheckoutPage() {
           key: orderData.keyId,
           amount: Math.round(orderData.amount * 100),
           currency: orderData.currency,
-          name: 'AstroConsult',
+          name: 'AstroVeda',
           description: orderData.serviceName,
           order_id: orderData.gatewayOrderId,
           prefill: {
@@ -240,7 +320,41 @@ export default function CheckoutPage() {
         throw new Error(verifyData.error || 'Verification failed');
       }
 
-      // Requirement 6: Automatically open WhatsApp chat when ₹149 service is selected and payment is verified
+      // Requirement 1: Save purchased order locally so it is permanently accessible in dashboard
+      try {
+        const existing = JSON.parse(localStorage.getItem('astroveda_customer_orders') || '[]');
+        const newOrder = {
+          id: paymentOrder.orderId,
+          orderNumber: paymentOrder.orderNumber,
+          status: 'ANALYSIS_READY',
+          amount: activeService.price,
+          createdAt: new Date().toISOString(),
+          service: {
+            name: activeService.name,
+            slug: activeService.slug,
+          },
+          birthProfile: {
+            dateOfBirth: formData.dateOfBirth,
+            timeOfBirth: formData.timeOfBirth,
+            birthCity: formData.birthCity,
+          },
+        };
+        localStorage.setItem(
+          'astroveda_customer_orders',
+          JSON.stringify([newOrder, ...existing.filter((o: any) => o.id !== paymentOrder.orderId)])
+        );
+
+        if (activeService.price >= 99 || ['chat-live', 'ai-chat', 'comprehensive-destiny', 'vedic-kundli-whatsapp'].includes(activeService.slug)) {
+          const unlocked = JSON.parse(localStorage.getItem('astroveda_unlocked_chat_orders') || '[]');
+          if (!unlocked.includes(paymentOrder.orderId)) {
+            localStorage.setItem('astroveda_unlocked_chat_orders', JSON.stringify([...unlocked, paymentOrder.orderId]));
+          }
+        }
+      } catch (storageErr) {
+        console.warn('Local storage save skipped:', storageErr);
+      }
+
+      // Requirement 6: Automatically trigger WhatsApp when ₹149 service is selected
       const resolvedPrice = (service?.price ?? matchedFallback.price);
       if (resolvedPrice === 149 || serviceSlug === 'vedic-kundli-whatsapp') {
         const whatsappPhone = process.env.NEXT_PUBLIC_WHATSAPP_SUPPORT_PHONE || '919876543210';
@@ -272,7 +386,7 @@ export default function CheckoutPage() {
   const activeService =
     service ||
     DEFAULT_SERVICES.find((s) => s.slug === serviceSlug) ||
-    DEFAULT_SERVICES[3];
+    DEFAULT_SERVICES[2];
 
   const localizedServiceName =
     language === 'hi' && HINDI_SERVICES[activeService.slug]
@@ -284,7 +398,7 @@ export default function CheckoutPage() {
       ? HINDI_SERVICES[activeService.slug].deliveryTime
       : activeService.deliveryTime;
 
-  // Requirement 2: ₹499 Premium tier is Coming Soon
+  // Coming Soon tier (₹499)
   if (activeService.price === 499 || serviceSlug === 'premium-master-horoscope') {
     return (
       <div className="min-h-[70vh] flex items-center justify-center px-4 py-12">
@@ -306,7 +420,7 @@ export default function CheckoutPage() {
           <div className="space-y-3">
             <div className="text-left bg-navy-950/80 border border-navy-800 rounded-2xl p-4 mb-4">
               <span className="text-[11px] font-bold text-gold-400 block mb-2">
-                {language === 'hi' ? 'तत्काल उपलब्ध रिपोर्ट्स (आरोही क्रम):' : 'Instantly Available Reports (Ascending Order):'}
+                {language === 'hi' ? 'तत्काल उपलब्ध परामर्श (आरोही क्रम):' : 'Instantly Available Consultations (Ascending):'}
               </span>
               <div className="grid grid-cols-2 gap-2">
                 <Link
@@ -333,7 +447,7 @@ export default function CheckoutPage() {
                 >
                   <span className="text-xs font-bold text-gold-400 block font-mono">₹99</span>
                   <span className="text-[11px] text-gray-200 line-clamp-1">
-                    {language === 'hi' ? 'विस्तृत भाग्य कुंडली' : 'Destiny Reading'}
+                    {language === 'hi' ? 'विस्तृत भाग्य + चैट लाइव' : 'Destiny + Chat Live'}
                   </span>
                 </Link>
                 <Link
@@ -362,8 +476,9 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen py-8 px-4 sm:px-6 max-w-2xl mx-auto">
-      {/* Step Indicators */}
+      {/* Requirement 3: Sequential 3-Step Checkout Flow */}
       <div className="flex items-center justify-between mb-8 px-2">
+        {/* Step 1: Sign Up / Sign In */}
         <div className="flex items-center gap-2">
           <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
             step >= 1 ? 'bg-gold-500 text-navy-950 shadow-gold-glow' : 'bg-navy-800 text-gray-500'
@@ -371,12 +486,13 @@ export default function CheckoutPage() {
             1
           </div>
           <span className={`text-xs font-semibold ${step >= 1 ? 'text-white' : 'text-gray-500'}`}>
-            {t('stepContact')}
+            {language === 'hi' ? '1. साइन अप / लॉगिन' : '1. Sign Up / Sign In'}
           </span>
         </div>
 
         <div className={`flex-1 h-[2px] mx-3 ${step >= 2 ? 'bg-gold-500/80' : 'bg-navy-800'}`} />
 
+        {/* Step 2: Birth Details */}
         <div className="flex items-center gap-2">
           <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
             step >= 2 ? 'bg-gold-500 text-navy-950 shadow-gold-glow' : 'bg-navy-800 text-gray-500'
@@ -384,12 +500,13 @@ export default function CheckoutPage() {
             2
           </div>
           <span className={`text-xs font-semibold ${step >= 2 ? 'text-white' : 'text-gray-500'}`}>
-            {t('stepBirth')}
+            {language === 'hi' ? '2. जन्म विवरण' : '2. Birth Details'}
           </span>
         </div>
 
         <div className={`flex-1 h-[2px] mx-3 ${step === 3 ? 'bg-gold-500/80' : 'bg-navy-800'}`} />
 
+        {/* Step 3: Payment */}
         <div className="flex items-center gap-2">
           <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
             step === 3 ? 'bg-gold-500 text-navy-950 shadow-gold-glow' : 'bg-navy-800 text-gray-500'
@@ -397,7 +514,7 @@ export default function CheckoutPage() {
             3
           </div>
           <span className={`text-xs font-semibold ${step === 3 ? 'text-white' : 'text-gray-500'}`}>
-            {t('stepPayment')}
+            {language === 'hi' ? '3. भुगतान' : '3. Payment'}
           </span>
         </div>
       </div>
@@ -459,84 +576,275 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      {/* STEP 1: PERSONAL INFORMATION */}
+      {/* STEP 1: SIGN UP / SIGN IN (Sequential Flow) */}
       {step === 1 && (
         <div className="bg-navy-900 border border-navy-800 rounded-3xl p-6 sm:p-8 shadow-xl">
-          <div className="mb-6">
-            <h1 className="text-xl font-black text-white font-heading">
-              {t('step1Heading')}
-            </h1>
-            <p className="text-xs text-gray-400 mt-1">
-              {t('step1Subheading')}
-            </p>
-          </div>
-
-          <form onSubmit={handleNextToBirthInfo} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                {t('fullNameLabel')}
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder={t('fullNamePlaceholder')}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-navy-950 border border-navy-700 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gold-400 transition-colors"
-                />
-                <User className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+          {currentUser ? (
+            /* Logged in state */
+            <div className="space-y-6">
+              <div className="mb-2">
+                <span className="text-[10px] uppercase font-bold text-gold-400 tracking-wider block mb-1">
+                  {language === 'hi' ? 'चरण 1: खाता सत्यापन' : 'Step 1: Account Verification'}
+                </span>
+                <h1 className="text-xl font-black text-white font-heading">
+                  {language === 'hi' ? 'सत्यापित खाते से जुड़े हैं' : 'Connected with Verified Account'}
+                </h1>
+                <p className="text-xs text-gray-400 mt-1">
+                  {language === 'hi'
+                    ? 'आप पहले से लॉगिन हैं। अपनी जन्म कुंडली विवरण भरने के लिए आगे बढ़ें।'
+                    : 'You are signed in. Proceed to enter your Kundli birth coordinates.'}
+                </p>
               </div>
-              {formErrors.name && <p className="text-[11px] text-red-400 mt-1">{formErrors.name}</p>}
-            </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                {t('emailLabel')}
-              </label>
-              <div className="relative">
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder={t('emailPlaceholder')}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-navy-950 border border-navy-700 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gold-400 transition-colors"
-                />
-                <Mail className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+              <div className="p-4 sm:p-5 rounded-2xl bg-navy-950 border border-emerald-500/40 text-left space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center font-bold">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest font-mono">
+                          {language === 'hi' ? 'सत्यापित जातक' : 'Verified Seeker'}
+                        </span>
+                      </div>
+                      <strong className="text-white text-sm block font-heading">{currentUser.name}</strong>
+                      <div className="text-xs text-gray-300 font-mono mt-0.5">
+                        {currentUser.email} • {currentUser.phone}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentUser(null);
+                      setAuthMode('login');
+                    }}
+                    className="text-xs text-gold-400 hover:text-gold-300 font-semibold underline shrink-0"
+                  >
+                    {language === 'hi' ? 'अन्य खाता' : 'Switch'}
+                  </button>
+                </div>
               </div>
-              {formErrors.email && <p className="text-[11px] text-red-400 mt-1">{formErrors.email}</p>}
-            </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                {t('phoneLabel')}
-              </label>
-              <div className="relative">
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder={t('phonePlaceholder')}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-navy-950 border border-navy-700 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gold-400 transition-colors"
-                />
-                <Phone className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+              <button
+                type="button"
+                onClick={() => {
+                  setStep(2);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="w-full py-4 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-bold text-sm hover:brightness-110 shadow-gold-glow flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
+              >
+                <span>{language === 'hi' ? 'जन्म विवरण के लिए आगे बढ़ें' : 'Continue to Birth Details'}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            /* Not logged in: Tabbed Sign Up / Login Form */
+            <div className="space-y-6">
+              <div>
+                <span className="text-[10px] uppercase font-bold text-gold-400 tracking-wider block mb-1">
+                  {language === 'hi' ? 'चरण 1: खाता बनाएं अथवा लॉगिन करें' : 'Step 1: Sign Up or Sign In'}
+                </span>
+                <h1 className="text-xl font-black text-white font-heading">
+                  {authMode === 'signup'
+                    ? (language === 'hi' ? 'नया खाता बनाएं' : 'Create Your Account')
+                    : (language === 'hi' ? 'अपने खाते में लॉगिन करें' : 'Sign In to Your Account')}
+                </h1>
+                <p className="text-xs text-gray-400 mt-1">
+                  {language === 'hi'
+                    ? 'आपकी व्यक्तिगत जन्म कुंडली रिपोर्ट आपके खाते में सुरक्षित रूप से संरक्षित रहेगी।'
+                    : 'Your personalized Vedic horoscope report will be permanently saved in your dashboard.'}
+                </p>
               </div>
-              {formErrors.phone && <p className="text-[11px] text-red-400 mt-1">{formErrors.phone}</p>}
-              <span className="text-[10px] text-gray-400 mt-1 block">
-                {t('phoneNote')}
-              </span>
-            </div>
 
-            <button
-              type="submit"
-              className="w-full py-4 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-bold text-sm hover:brightness-110 shadow-gold-glow flex items-center justify-center gap-2 transition-all active:scale-[0.99] mt-6"
-            >
-              <span>{t('continueToBirth')}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </form>
+              {/* Mode Switcher Tabs */}
+              <div className="flex rounded-2xl bg-navy-950 p-1 border border-navy-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('signup');
+                    setAuthError('');
+                  }}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    authMode === 'signup'
+                      ? 'bg-gold-500 text-navy-950 shadow-gold-glow'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {language === 'hi' ? 'नया खाता बनाएं (Sign Up)' : 'Sign Up (New User)'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('login');
+                    setAuthError('');
+                  }}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    authMode === 'login'
+                      ? 'bg-gold-500 text-navy-950 shadow-gold-glow'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {language === 'hi' ? 'लॉगिन करें (Sign In)' : 'Sign In (Existing User)'}
+                </button>
+              </div>
+
+              {authError && (
+                <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{authError}</span>
+                </div>
+              )}
+
+              {authMode === 'signup' ? (
+                /* Sign Up Form */
+                <form onSubmit={handleSignUpSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                      {t('fullNameLabel')}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder={t('fullNamePlaceholder')}
+                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-navy-950 border border-navy-700 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gold-400 transition-colors"
+                      />
+                      <User className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+                    </div>
+                    {formErrors.name && <p className="text-[11px] text-red-400 mt-1">{formErrors.name}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                      {t('emailLabel')}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder={t('emailPlaceholder')}
+                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-navy-950 border border-navy-700 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gold-400 transition-colors"
+                      />
+                      <Mail className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+                    </div>
+                    {formErrors.email && <p className="text-[11px] text-red-400 mt-1">{formErrors.email}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                      {t('phoneLabel')}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        placeholder={t('phonePlaceholder')}
+                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-navy-950 border border-navy-700 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gold-400 transition-colors"
+                      />
+                      <Phone className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+                    </div>
+                    {formErrors.phone && <p className="text-[11px] text-red-400 mt-1">{formErrors.phone}</p>}
+                    <span className="text-[10px] text-gray-400 mt-1 block">
+                      {t('phoneNote')}
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                      {language === 'hi' ? 'पासवर्ड बनाएं (सुरक्षित लॉगिन हेतु)' : 'Create Password (min 6 characters)'}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-navy-950 border border-navy-700 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gold-400 transition-colors"
+                      />
+                      <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+                    </div>
+                    {formErrors.password && <p className="text-[11px] text-red-400 mt-1">{formErrors.password}</p>}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={authLoading}
+                    className="w-full py-4 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-bold text-sm hover:brightness-110 shadow-gold-glow flex items-center justify-center gap-2 transition-all active:scale-[0.99] mt-6 disabled:opacity-60"
+                  >
+                    {authLoading ? (
+                      <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-navy-950 border-t-transparent" />
+                    ) : (
+                      <>
+                        <span>{language === 'hi' ? 'खाता बनाएं एवं जन्म विवरण भरें' : 'Sign Up & Continue to Birth Details'}</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </form>
+              ) : (
+                /* Login Form */
+                <form onSubmit={handleLoginSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                      {t('emailLabel')}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder={t('emailPlaceholder')}
+                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-navy-950 border border-navy-700 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gold-400 transition-colors"
+                      />
+                      <Mail className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+                    </div>
+                    {formErrors.email && <p className="text-[11px] text-red-400 mt-1">{formErrors.email}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                      {language === 'hi' ? 'पासवर्ड' : 'Password'}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-navy-950 border border-navy-700 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gold-400 transition-colors"
+                      />
+                      <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+                    </div>
+                    {formErrors.password && <p className="text-[11px] text-red-400 mt-1">{formErrors.password}</p>}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={authLoading}
+                    className="w-full py-4 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-bold text-sm hover:brightness-110 shadow-gold-glow flex items-center justify-center gap-2 transition-all active:scale-[0.99] mt-6 disabled:opacity-60"
+                  >
+                    {authLoading ? (
+                      <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-navy-950 border-t-transparent" />
+                    ) : (
+                      <>
+                        <span>{language === 'hi' ? 'लॉगिन करें एवं जारी रखें' : 'Sign In & Continue to Birth Details'}</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -544,6 +852,9 @@ export default function CheckoutPage() {
       {step === 2 && (
         <div className="bg-navy-900 border border-navy-800 rounded-3xl p-6 sm:p-8 shadow-xl">
           <div className="mb-6">
+            <span className="text-[10px] uppercase font-bold text-gold-400 tracking-wider block mb-1">
+              {language === 'hi' ? 'चरण 2: जन्म विवरण' : 'Step 2: Birth Details'}
+            </span>
             <h1 className="text-xl font-black text-white font-heading">
               {t('step2Heading')}
             </h1>
@@ -676,7 +987,7 @@ export default function CheckoutPage() {
                 type="submit"
                 className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-bold text-sm hover:brightness-110 shadow-gold-glow flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
               >
-                <span>{t('continueToSummary')}</span>
+                <span>{language === 'hi' ? 'भुगतान के लिए आगे बढ़ें' : 'Proceed to Payment'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -688,6 +999,9 @@ export default function CheckoutPage() {
       {step === 3 && (
         <div className="bg-navy-900 border border-navy-800 rounded-3xl p-6 sm:p-8 shadow-xl">
           <div className="mb-6">
+            <span className="text-[10px] uppercase font-bold text-gold-400 tracking-wider block mb-1">
+              {language === 'hi' ? 'चरण 3: समीक्षा एवं भुगतान' : 'Step 3: Review & Payment'}
+            </span>
             <h1 className="text-xl font-black text-white font-heading">
               {t('step3Heading')}
             </h1>

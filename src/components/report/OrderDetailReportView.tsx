@@ -13,8 +13,11 @@ import {
   Heart,
   Coins,
   Shield,
+  Bot,
+  ArrowRight,
+  MessageSquare,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import VedicChartSvg from '@/components/kundli/VedicChartSvg';
 import { ChartData } from '@/lib/astrology/types';
 import { AstrologyReportContent } from '@/lib/ai/types';
@@ -61,16 +64,36 @@ export default function OrderDetailReportView({
   const { t, language } = useLanguage();
   const [reportLang, setReportLang] = useState<'hi' | 'en'>(language);
 
-  // Requirement 11: Reports can be accessed after 30 minutes countdown timer
-  const orderCreatedTime = new Date(order.createdAt).getTime();
-  const elapsedMinutes = (Date.now() - orderCreatedTime) / (1000 * 60);
-  const [timerComplete, setTimerComplete] = useState(
-    elapsedMinutes >= 30 || order.status === 'DELIVERED'
-  );
+  // Requirement 2: Timer reset upon returning from Live Chat, and 30-min countdown timer
+  const [timerComplete, setTimerComplete] = useState(false);
+  const [timerKey, setTimerKey] = useState(0);
 
-  const isReady =
-    (order.status === 'ANALYSIS_READY' || order.status === 'DELIVERED') &&
-    timerComplete;
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const resetKey = `astroveda_timer_reset_${order.id}`;
+    const didReturnFromChat = sessionStorage.getItem(resetKey) === 'true';
+
+    if (didReturnFromChat) {
+      sessionStorage.removeItem(resetKey);
+      setTimerComplete(false);
+      setTimerKey((prev) => prev + 1);
+      return;
+    }
+
+    const orderCreatedTime = new Date(order.createdAt).getTime();
+    const elapsedMinutes = (Date.now() - orderCreatedTime) / (1000 * 60);
+    if (elapsedMinutes >= 30 || order.status === 'DELIVERED') {
+      setTimerComplete(true);
+    }
+  }, [order.createdAt, order.id, order.status]);
+
+  const isReady = timerComplete;
+
+  const handleNavigateToLiveChat = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(`astroveda_timer_reset_${order.id}`, 'true');
+    }
+  };
 
   const getStatusDisplay = (status: string) => {
     if (language === 'hi') {
@@ -213,11 +236,50 @@ export default function OrderDetailReportView({
         </div>
       </div>
 
+      {/* Live Astrologer Live Chat Card (Strictly Manual Click Navigation) */}
+      <div className="bg-gradient-to-r from-gold-500/15 via-amber-500/20 to-gold-500/15 border border-gold-400/50 rounded-3xl p-5 sm:p-6 text-left space-y-3 shadow-gold-glow no-print">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-gold-400 via-amber-500 to-gold-600 flex items-center justify-center text-navy-950 font-bold shadow-gold-glow shrink-0">
+              <Bot className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm sm:text-base font-bold text-white font-heading">
+                  {language === 'hi' ? 'आचार्य AstroVeda • Chat Live' : 'Acharya AstroVeda • Chat Live'}
+                </h3>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  {language === 'hi' ? 'मैन्युअल चैट' : 'Manual Chat'}
+                </span>
+              </div>
+              <p className="text-xs text-gray-300 mt-0.5">
+                {language === 'hi'
+                  ? 'अपनी जन्म पत्रिका से जुड़े व्यक्तिगत प्रश्न पूछने हेतु आचार्य जी से लाइव परामर्श करें।'
+                  : 'Start 1-on-1 consultation with Acharya AstroVeda connected to your birth chart.'}
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href={`/consultation/ai-chat?orderId=${order.id}`}
+            onClick={handleNavigateToLiveChat}
+            className="shrink-0 py-2.5 px-5 rounded-xl bg-gradient-to-r from-gold-400 via-amber-500 to-gold-500 text-navy-950 font-bold text-xs hover:brightness-110 shadow-gold-glow flex items-center justify-center gap-1.5 transition-all active:scale-95"
+          >
+            <Bot className="w-4 h-4" />
+            <span>{language === 'hi' ? 'चैट लाइव शुरू करें' : 'Open Live Chat'}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </div>
+
       {/* 30-Minute Live Countdown Timer before report unlocks */}
       {!timerComplete && (
         <CountdownReportTimer
+          key={timerKey}
           createdAt={order.createdAt}
           orderNumber={order.orderNumber}
+          customerName={order.user?.name}
+          orderId={order.id}
           onComplete={() => setTimerComplete(true)}
         />
       )}

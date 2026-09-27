@@ -23,6 +23,8 @@ import {
   CreditCard,
   Flame,
   ArrowRight,
+  FileText,
+  AlertTriangle,
 } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/context';
 
@@ -78,6 +80,12 @@ function AIChatContent() {
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
   const [restoreOrderNumber, setRestoreOrderNumber] = useState('');
   const [restoreError, setRestoreError] = useState('');
+  const [ineligibleOrderInfo, setIneligibleOrderInfo] = useState<{
+    orderId: string;
+    orderNumber: string;
+    serviceName: string;
+    amount: number;
+  } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -93,17 +101,37 @@ function AIChatContent() {
     }
   }, [messages, isTyping, isUnlocked]);
 
-  // Check Payment & Access Status
+  // Requirement 1: Check Payment & Separate Access Status per service
   useEffect(() => {
     setIsCheckingAccess(true);
+    setIneligibleOrderInfo(null);
 
-    // 1. If orderId is in query params, verify payment from database
+    // 1. If orderId is in query params, verify payment & service type from database
     if (orderId) {
       fetch(`/api/customer/orders/${orderId}`)
         .then((res) => res.json())
         .then((data) => {
-          if (data.order && (data.order.paymentStatus === 'SUCCESS' || data.order.status === 'PAID')) {
+          if (data.order && (data.order.paymentStatus === 'SUCCESS' || data.order.status === 'PAID' || data.order.status === 'ANALYSIS_READY')) {
             const ord = data.order;
+            const isEligible =
+              ord.service?.slug === 'chat-live' ||
+              ord.service?.slug === 'ai-chat' ||
+              ord.service?.slug === 'comprehensive-destiny' ||
+              ord.service?.slug === 'vedic-kundli-whatsapp' ||
+              (ord.service?.price && ord.service.price >= 99) ||
+              (ord.amount && ord.amount >= 99);
+
+            if (!isEligible) {
+              setIneligibleOrderInfo({
+                orderId: ord.id,
+                orderNumber: ord.orderNumber,
+                serviceName: ord.service?.name || 'कुंडली रिपोर्ट',
+                amount: ord.amount || ord.service?.price || 49,
+              });
+              setIsUnlocked(false);
+              return;
+            }
+
             const bp = ord.birthProfile;
             const astro = ord.analysis?.astrologyData || {};
 
@@ -127,7 +155,10 @@ function AIChatContent() {
             setProfile(loadedProfile);
             setIsUnlocked(true);
             try {
-              localStorage.setItem('astroveda_chat_unlocked', 'true');
+              const existing = JSON.parse(localStorage.getItem('astroveda_unlocked_chat_orders') || '[]');
+              if (!existing.includes(ord.id)) {
+                localStorage.setItem('astroveda_unlocked_chat_orders', JSON.stringify([...existing, ord.id]));
+              }
             } catch {}
             initializeWelcomeMessage(loadedProfile);
           } else {
@@ -139,12 +170,38 @@ function AIChatContent() {
         })
         .finally(() => setIsCheckingAccess(false));
     } else {
-      // 2. Check if previous unlock exists in local storage
+      // 2. Check if previous unlock exists in local storage for an eligible order
       try {
-        const storedUnlock = localStorage.getItem('astroveda_chat_unlocked');
-        if (storedUnlock === 'true') {
-          setIsUnlocked(true);
-          initializeWelcomeMessage(DEFAULT_DEMO_PROFILE);
+        const storedOrderIds = JSON.parse(localStorage.getItem('astroveda_unlocked_chat_orders') || '[]');
+        if (storedOrderIds && storedOrderIds.length > 0) {
+          const latestId = storedOrderIds[storedOrderIds.length - 1];
+          if (latestId.startsWith('sim_chat_')) {
+            setIsUnlocked(true);
+            initializeWelcomeMessage(DEFAULT_DEMO_PROFILE);
+            setIsCheckingAccess(false);
+            return;
+          }
+          fetch(`/api/customer/orders/${latestId}`)
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.order && (data.order.paymentStatus === 'SUCCESS' || data.order.status === 'PAID')) {
+                const isEligible =
+                  data.order.service?.slug === 'chat-live' ||
+                  data.order.service?.slug === 'ai-chat' ||
+                  data.order.service?.slug === 'comprehensive-destiny' ||
+                  data.order.service?.slug === 'vedic-kundli-whatsapp' ||
+                  (data.order.amount && data.order.amount >= 99);
+                if (isEligible) {
+                  setIsUnlocked(true);
+                  initializeWelcomeMessage(DEFAULT_DEMO_PROFILE);
+                  return;
+                }
+              }
+              setIsUnlocked(false);
+            })
+            .catch(() => setIsUnlocked(false))
+            .finally(() => setIsCheckingAccess(false));
+          return;
         } else {
           setIsUnlocked(false);
         }
@@ -273,8 +330,10 @@ Feel free to ask any question regarding your career, promotions, relationships, 
 
   // Instant Demo Unlock for testing
   const handleInstantDemoUnlock = () => {
+    const demoId = `sim_chat_${Date.now()}`;
     try {
-      localStorage.setItem('astroveda_chat_unlocked', 'true');
+      const existing = JSON.parse(localStorage.getItem('astroveda_unlocked_chat_orders') || '[]');
+      localStorage.setItem('astroveda_unlocked_chat_orders', JSON.stringify([...existing, demoId]));
     } catch {}
     setIsUnlocked(true);
     initializeWelcomeMessage(profile);
@@ -291,6 +350,21 @@ Feel free to ask any question regarding your career, promotions, relationships, 
       .then((res) => res.json())
       .then((data) => {
         if (data.order && (data.order.paymentStatus === 'SUCCESS' || data.order.status === 'PAID')) {
+          const isEligible =
+            data.order.service?.slug === 'chat-live' ||
+            data.order.service?.slug === 'ai-chat' ||
+            data.order.service?.slug === 'comprehensive-destiny' ||
+            data.order.service?.slug === 'vedic-kundli-whatsapp' ||
+            (data.order.amount && data.order.amount >= 99);
+
+          if (!isEligible) {
+            setRestoreError(
+              language === 'hi'
+                ? `ऑर्डर #${data.order.orderNumber} (${data.order.service?.name}) केवल जन्म पत्रिका रिपोर्ट के लिए है। Chat Live (₹99) का उपयोग करने के लिए अपग्रेड करें।`
+                : `Order #${data.order.orderNumber} (${data.order.service?.name}) is for Kundli Report only. Please upgrade to the ₹99 Chat Live service.`
+            );
+            return;
+          }
           router.push(`/consultation/ai-chat?orderId=${data.order.id}`);
         } else {
           setRestoreError(
@@ -380,6 +454,39 @@ Feel free to ask any question regarding your career, promotions, relationships, 
                 : 'Get immediate, personalized Vedic astrological answers based on your actual birth chart, Lagna, and active Mahadasha.'}
             </p>
           </div>
+
+          {/* Separate Payment Alert for Other Services */}
+          {ineligibleOrderInfo && (
+            <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-left space-y-2">
+              <div className="flex items-center gap-2 text-amber-300 font-bold text-xs">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>
+                  {language === 'hi' ? 'अलग सेवा भुगतान सत्यापन' : 'Separate Service Payment Verification'}
+                </span>
+              </div>
+              <p className="text-xs text-gray-300 leading-relaxed">
+                {language === 'hi'
+                  ? `आपने ऑर्डर #${ineligibleOrderInfo.orderNumber} के तहत ₹${ineligibleOrderInfo.amount} का "${ineligibleOrderInfo.serviceName}" खरीदा है। यह सेवा जन्म पत्रिका रिपोर्ट हेतु मान्य है। 1-on-1 Chat Live का उपयोग करने के लिए ₹99 की Chat Live सेवा अलग से आवश्यक है।`
+                  : `You purchased "${ineligibleOrderInfo.serviceName}" (₹${ineligibleOrderInfo.amount}) under Order #${ineligibleOrderInfo.orderNumber}. Each service requires separate verification. Please unlock Chat Live for ₹99 to consult Acharya AstroVeda.`}
+              </p>
+              <div className="pt-2 flex flex-wrap gap-2">
+                <Link
+                  href={`/dashboard/orders/${ineligibleOrderInfo.orderId}`}
+                  className="py-2 px-3.5 rounded-xl bg-navy-800 border border-navy-700 hover:bg-navy-750 text-gold-300 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>{language === 'hi' ? 'अपनी रिपोर्ट देखें' : 'View Your Report'}</span>
+                </Link>
+                <Link
+                  href="/checkout/comprehensive-destiny"
+                  className="py-2 px-3.5 rounded-xl bg-gold-500 hover:bg-gold-400 text-navy-950 text-xs font-bold inline-flex items-center gap-1.5 transition-all shadow-gold-glow"
+                >
+                  <CreditCard className="w-3.5 h-3.5" />
+                  <span>{language === 'hi' ? '₹99 Chat Live अनलॉक करें' : 'Unlock Chat Live (₹99)'}</span>
+                </Link>
+              </div>
+            </div>
+          )}
 
           {/* Pricing Highlight (₹99) */}
           <div className="p-5 rounded-2xl bg-gradient-to-r from-gold-500/15 via-amber-500/20 to-gold-500/15 border border-gold-400/60 flex items-center justify-between text-left shadow-gold-glow">

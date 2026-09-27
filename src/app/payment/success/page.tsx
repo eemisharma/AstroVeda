@@ -15,7 +15,6 @@ function PaymentSuccessContent() {
   const orderId = searchParams.get('orderId');
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [autoRedirectSeconds, setAutoRedirectSeconds] = useState<number | null>(4);
 
   const whatsappPhone = process.env.NEXT_PUBLIC_WHATSAPP_SUPPORT_PHONE || '919876543210';
 
@@ -46,22 +45,6 @@ function PaymentSuccessContent() {
     }
   }, [orderId, whatsappPhone, language]);
 
-  // Countdown timer for automatic redirect to personalized AI Chat
-  useEffect(() => {
-    if (autoRedirectSeconds === null || !orderId) return;
-
-    if (autoRedirectSeconds <= 0) {
-      router.push(`/consultation/ai-chat?orderId=${orderId}`);
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      setAutoRedirectSeconds((prev) => (prev !== null ? prev - 1 : null));
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [autoRedirectSeconds, orderId, router]);
-
   const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
     language === 'hi'
       ? `नमस्ते AstroVeda, मैंने अभी ऑर्डर #${order?.orderNumber || orderId} का भुगतान पूरा किया है।`
@@ -91,7 +74,7 @@ function PaymentSuccessContent() {
             {t('paySuccessDesc')}
           </p>
 
-          {/* AI Astrologer Live Chat Card (Post-Payment Feature) */}
+          {/* AI Astrologer Live Chat Card (Post-Payment Feature - Strictly Manual) */}
           {orderId && (
             <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-gold-500/15 via-amber-500/20 to-gold-500/15 border border-gold-400/60 text-left space-y-3 shadow-gold-glow animate-luxury-glow">
               <div className="flex items-center justify-between">
@@ -99,36 +82,26 @@ function PaymentSuccessContent() {
                   <Sparkles className="w-4 h-4 text-gold-400 animate-spin-slow" />
                   {language === 'hi' ? '🌟 व्यक्तिगत AI ज्योतिषी तैयार है' : '🌟 Personalized AI Astrologer Ready'}
                 </span>
-                {autoRedirectSeconds !== null && autoRedirectSeconds > 0 && (
-                  <span className="text-[11px] font-mono text-gold-300 bg-navy-950/80 px-2 py-0.5 rounded-full border border-gold-500/30">
-                    {language === 'hi' ? `${autoRedirectSeconds}s में रिडायरेक्ट...` : `Redirecting in ${autoRedirectSeconds}s...`}
-                  </span>
-                )}
+                <span className="text-[11px] font-mono text-emerald-400 bg-navy-950/80 px-2.5 py-0.5 rounded-full border border-emerald-500/30 font-bold">
+                  {language === 'hi' ? 'मैन्युअल चैट उपलब्ध' : 'Manual Chat Available'}
+                </span>
               </div>
 
               <p className="text-xs text-gray-200 leading-relaxed">
                 {language === 'hi'
-                  ? 'आचार्य AstroVeda आपकी जन्म कुंडली का अध्ययन कर चुके हैं। अब आप अपने करियर, विवाह, धन या ग्रह शांति से जुड़े प्रश्न सीधे पूछ सकते हैं!'
-                  : 'Acharya AstroVeda is online with your Vedic birth chart loaded. Ask any question about your career, love life, finances, or remedies!'}
+                  ? 'आचार्य AstroVeda आपकी जन्म कुंडली का अध्ययन कर चुके हैं। आप अपने करियर, विवाह, धन या ग्रह शांति से जुड़े प्रश्न पूछने हेतु कभी भी चैट आरंभ कर सकते हैं।'
+                  : 'Acharya AstroVeda is online with your Vedic birth chart loaded. Start your consultation whenever you are ready!'}
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-2 pt-1">
+              <div className="pt-1">
                 <Link
                   href={`/consultation/ai-chat?orderId=${orderId}`}
-                  className="flex-1 py-3.5 px-4 rounded-xl bg-gradient-to-r from-gold-400 via-amber-500 to-gold-500 text-navy-950 font-black text-xs sm:text-sm hover:brightness-110 shadow-gold-glow flex items-center justify-center gap-2 transition-all active:scale-95"
+                  className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-gold-400 via-amber-500 to-gold-500 text-navy-950 font-black text-xs sm:text-sm hover:brightness-110 shadow-gold-glow flex items-center justify-center gap-2 transition-all active:scale-95"
                 >
                   <Bot className="w-4 h-4" />
                   <span>{language === 'hi' ? 'अपने AI ज्योतिषी से लाइव चैट करें' : 'Start Live AI Astrologer Chat'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
-                {autoRedirectSeconds !== null && (
-                  <button
-                    onClick={() => setAutoRedirectSeconds(null)}
-                    className="px-3 py-2 rounded-xl bg-navy-950/60 hover:bg-navy-950 text-gray-400 hover:text-white text-[11px] font-semibold transition-all border border-navy-700"
-                  >
-                    {language === 'hi' ? 'यहीं रुकें' : 'Stay Here'}
-                  </button>
-                )}
               </div>
             </div>
           )}

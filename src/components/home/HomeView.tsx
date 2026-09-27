@@ -28,6 +28,7 @@ import { Heart, Briefcase, Activity, Headphones, Shield } from 'lucide-react';
 import ScrollReveal from '@/components/common/ScrollReveal';
 import LiveActivityTicker from '@/components/home/LiveActivityTicker';
 import DailyRashifalPreview from '@/components/home/DailyRashifalPreview';
+import LiveCosmicCounters from '@/components/common/LiveCosmicCounters';
 
 interface HomeViewProps {
   services?: any[];
@@ -209,9 +210,12 @@ export default function HomeView({ services }: HomeViewProps) {
         </div>
 
         <ScrollReveal direction="up" className="relative z-20 max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-navy-900/90 border border-gold-500/30 text-gold-300 text-xs font-semibold mb-6 shadow-gold-glow backdrop-blur-md animate-pulse-ring">
-            <Sparkles className="w-3.5 h-3.5 text-gold-400" />
-            <span>{t('heroBadge')}</span>
+          <div className="flex flex-col items-center justify-center gap-3 mb-6">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-navy-900/90 border border-gold-500/30 text-gold-300 text-xs font-semibold shadow-gold-glow backdrop-blur-md animate-pulse-ring">
+              <Sparkles className="w-3.5 h-3.5 text-gold-400" />
+              <span>{t('heroBadge')}</span>
+            </div>
+            <LiveCosmicCounters variant="pill" />
           </div>
 
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-[1.2] mb-6 font-heading">
