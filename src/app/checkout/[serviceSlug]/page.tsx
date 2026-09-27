@@ -254,7 +254,19 @@ export default function CheckoutPage() {
 
       setPaymentOrder(orderData);
 
-      if (orderData.isSimulated || !(window as any).Razorpay) {
+      let razorpayInstance = (window as any).Razorpay;
+      if (!razorpayInstance && !orderData.isSimulated) {
+        await new Promise((resolve) => {
+          const script = document.createElement('script');
+          script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+          script.onload = () => resolve(true);
+          script.onerror = () => resolve(false);
+          document.body.appendChild(script);
+        });
+        razorpayInstance = (window as any).Razorpay;
+      }
+
+      if (orderData.isSimulated || !razorpayInstance) {
         setShowSimulator(true);
       } else {
         const options = {
@@ -286,7 +298,7 @@ export default function CheckoutPage() {
           },
         };
 
-        const rzp = new (window as any).Razorpay(options);
+        const rzp = new razorpayInstance(options);
         rzp.on('payment.failed', function (resp: any) {
           router.push(`/payment/failed?error=${encodeURIComponent(resp.error.description || 'Payment Failed')}`);
         });

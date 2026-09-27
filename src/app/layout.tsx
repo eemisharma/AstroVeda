@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import { Noto_Sans_Devanagari, Rozha_One, Inter } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/components/layout/Navbar';
@@ -90,6 +91,7 @@ export default function RootLayout({
           <InstallPrompt />
           <ServiceWorkerRegister />
           <UtmTracker />
+          <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
         </LanguageProvider>
       </body>
     </html>
