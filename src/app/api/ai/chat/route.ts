@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
 import { vedicChatbotService, ChatUserAstrologyProfile } from '@/lib/ai/chatbot';
+import { orderStore } from '@/lib/orders/order-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,6 +63,28 @@ export async function POST(req: Request) {
             problemCategory: order.service?.name || profile.problemCategory,
             orderNumber: order.orderNumber,
           };
+        } else {
+          const stored = orderStore.getOrder(orderId);
+          if (stored) {
+            const bp = stored.birthProfile;
+            const astro = stored.analysis?.astrologyData || {};
+            profile = {
+              fullName: stored.user?.name || bp?.fullName || profile.fullName,
+              gender: bp?.gender || undefined,
+              birthDate: bp?.dateOfBirth || profile.birthDate,
+              birthTime: bp?.timeOfBirth || profile.birthTime,
+              birthCity: bp?.birthCity || profile.birthCity,
+              lagna: astro.ascendant?.sign || profile.lagna,
+              moonSign: astro.moonSign || profile.moonSign,
+              sunSign: astro.sunSign || profile.sunSign,
+              nakshatra: astro.nakshatra || profile.nakshatra,
+              currentDasha: astro.dasha?.currentMahadasha
+                ? `${astro.dasha.currentMahadasha} - ${astro.dasha.currentAntardasha || ''}`
+                : profile.currentDasha,
+              problemCategory: stored.service?.name || profile.problemCategory,
+              orderNumber: stored.orderNumber,
+            };
+          }
         }
       } catch (err) {
         console.warn('Failed to retrieve order for AI chat, continuing with fallback profile:', err);

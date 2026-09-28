@@ -17,6 +17,9 @@ import {
   ShieldCheck,
   Share2,
   Check,
+  Clock,
+  Coins,
+  TrendingUp,
 } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/context';
 import { getDailyHoroscope, DailyHoroscopeResponse, DailyRashifalData } from '@/lib/astrology/daily-rashifal';
@@ -177,6 +180,76 @@ export default function DailyRashifalPage() {
                 >
                   {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
                 </button>
+              </div>
+            </div>
+
+            {/* Auspicious Muhurat Pill */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-navy-950/80 border border-gold-500/30">
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-gold-300 font-semibold">
+                <Clock className="w-4 h-4 text-gold-400" />
+                <span>{language === 'hi' ? 'आज का शुभ मुहूर्त:' : 'Auspicious Timing:'}</span>
+                <span className="text-white font-mono font-bold bg-navy-900 px-2 py-0.5 rounded-lg border border-navy-700">
+                  {language === 'hi' ? currentRashi.shubhMuhuratHi : currentRashi.shubhMuhuratEn}
+                </span>
+              </div>
+              <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5" />
+                {data?.panchangHighlightHi}
+              </span>
+            </div>
+
+            {/* 4 Domain Vitality Scores */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3.5 rounded-xl bg-navy-950/70 border border-navy-800 space-y-1.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-gray-400 flex items-center gap-1">
+                    <Briefcase className="w-3 h-3 text-amber-400" />
+                    {language === 'hi' ? 'करियर' : 'Career'}
+                  </span>
+                  <span className="font-bold text-amber-300 font-mono">{currentRashi.careerScore}%</span>
+                </div>
+                <div className="w-full bg-navy-800 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-gradient-to-r from-amber-500 to-gold-400 h-full rounded-full transition-all duration-700" style={{ width: `${currentRashi.careerScore}%` }} />
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-navy-950/70 border border-navy-800 space-y-1.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-gray-400 flex items-center gap-1">
+                    <Heart className="w-3 h-3 text-rose-400" />
+                    {language === 'hi' ? 'प्रेम' : 'Love'}
+                  </span>
+                  <span className="font-bold text-rose-300 font-mono">{currentRashi.loveScore}%</span>
+                </div>
+                <div className="w-full bg-navy-800 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-gradient-to-r from-rose-500 to-pink-400 h-full rounded-full transition-all duration-700" style={{ width: `${currentRashi.loveScore}%` }} />
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-navy-950/70 border border-navy-800 space-y-1.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-gray-400 flex items-center gap-1">
+                    <Coins className="w-3 h-3 text-emerald-400" />
+                    {language === 'hi' ? 'आर्थिक' : 'Finance'}
+                  </span>
+                  <span className="font-bold text-emerald-300 font-mono">{currentRashi.financeScore}%</span>
+                </div>
+                <div className="w-full bg-navy-800 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-700" style={{ width: `${currentRashi.financeScore}%` }} />
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-navy-950/70 border border-navy-800 space-y-1.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-gray-400 flex items-center gap-1">
+                    <Activity className="w-3 h-3 text-blue-400" />
+                    {language === 'hi' ? 'आरोग्य' : 'Health'}
+                  </span>
+                  <span className="font-bold text-blue-300 font-mono">{currentRashi.healthScore}%</span>
+                </div>
+                <div className="w-full bg-navy-800 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-gradient-to-r from-blue-500 to-cyan-400 h-full rounded-full transition-all duration-700" style={{ width: `${currentRashi.healthScore}%` }} />
+                </div>
               </div>
             </div>
 

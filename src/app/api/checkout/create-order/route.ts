@@ -4,6 +4,7 @@ import prisma from '@/lib/db';
 import { getSessionUser, hashPassword } from '@/lib/auth';
 import { createPaymentOrder } from '@/lib/payment/razorpay';
 import { FALLBACK_SERVICES } from '@/lib/constants/services';
+import { orderStore } from '@/lib/orders/order-store';
 
 const checkoutSchema = z.object({
   serviceSlug: z.string(),
@@ -150,6 +151,34 @@ export async function POST(req: Request) {
     } catch (dbError) {
       console.warn('Database write bypassed in serverless / cloud mode, using resilient order generation:', dbError);
     }
+
+    // Save customer order and birth details in persistent runtime orderStore
+    orderStore.saveOrder({
+      id: orderId,
+      orderNumber,
+      amount: resolvedService.price,
+      currency: resolvedService.currency,
+      status: 'PENDING_PAYMENT',
+      paymentStatus: 'PENDING',
+      createdAt: new Date().toISOString(),
+      service: resolvedService,
+      user: {
+        name: validated.name.trim(),
+        email: validated.email.trim(),
+        phone: validated.phone.trim(),
+      },
+      birthProfile: {
+        fullName: validated.name.trim(),
+        dateOfBirth: validated.dateOfBirth,
+        timeOfBirth: validated.timeOfBirth,
+        birthCity: validated.birthCity,
+        birthCountry: validated.birthCountry || 'India',
+        gender: validated.gender || 'Not specified',
+        currentCity: validated.currentCity || undefined,
+        latitude: validated.latitude || null,
+        longitude: validated.longitude || null,
+      },
+    });
 
     // Initiate Payment order with Razorpay or built-in Test Simulator
     const paymentOrder = await createPaymentOrder({

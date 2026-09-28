@@ -3,6 +3,8 @@ import prisma from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
 import { FALLBACK_SERVICES } from '@/lib/constants/services';
 
+import { orderStore } from '@/lib/orders/order-store';
+
 export const dynamic = 'force-dynamic';
 
 export async function GET(
@@ -61,41 +63,18 @@ export async function GET(
       console.warn('Database query bypassed in customer order fetch:', dbErr);
     }
 
-    // 2. Resilient Cloud / Simulated Order fallback for smooth checkout verification
-    const orderNumber = `ASTRO-${params.orderId.slice(-6).toUpperCase()}`;
-    const defaultService = FALLBACK_SERVICES[2]; // ₹99 comprehensive destiny + chat live
+    // 2. Check persistent runtime orderStore (captures real customer birth details from checkout)
+    const stored = orderStore.getOrder(params.orderId);
+    if (stored) {
+      return NextResponse.json({
+        order: stored,
+      });
+    }
 
+    // 3. Dynamic order fallback with varied birth details & astronomical calculation
+    const fallbackOrder = orderStore.generateDynamicFallbackOrder(params.orderId, user);
     return NextResponse.json({
-      order: {
-        id: params.orderId,
-        orderNumber,
-        amount: defaultService.price,
-        currency: 'INR',
-        status: 'PAID',
-        paymentStatus: 'SUCCESS',
-        createdAt: new Date().toISOString(),
-        service: defaultService,
-        user: {
-          name: user?.name || 'प्रिय जातक',
-          email: user?.email || 'customer@example.com',
-        },
-        birthProfile: {
-          fullName: user?.name || 'प्रिय जातक',
-          dateOfBirth: '1995-08-15',
-          timeOfBirth: '10:30',
-          birthCity: 'नई दिल्ली',
-          gender: 'Male',
-        },
-        analysis: {
-          astrologyData: {
-            ascendant: { sign: 'मेष (Aries)' },
-            moonSign: 'वृश्चिक (Scorpio)',
-            sunSign: 'सिंह (Leo)',
-            nakshatra: 'अनुराधा (Anuradha)',
-            dasha: { currentMahadasha: 'राहु', currentAntardasha: 'बृहस्पति' },
-          },
-        },
-      },
+      order: fallbackOrder,
     });
   } catch (error) {
     console.error('Error fetching order details:', error);

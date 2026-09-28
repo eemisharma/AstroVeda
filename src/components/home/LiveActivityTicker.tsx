@@ -48,10 +48,12 @@ export default function LiveActivityTicker() {
     { icon: 'visitors', text: `👥 आज के कुल विज़िटर्स: ${todayVisitors.toLocaleString('en-IN')}+ जातक` },
     { icon: 'rashi', text: `✨ आज जांची गई राशियाँ व कुंडलियाँ: ${rashiChecked.toLocaleString('en-IN')}+` },
     { icon: 'star', text: '⭐ 4.9/5 स्टार रेटिंग • 50,000+ संतुष्ट जातक' },
-    { icon: 'sparkle', text: '✨ अमित जी (नई दिल्ली) ने ₹149 व्हाट्सएप परामर्श बुक किया' },
+    { icon: 'sparkle', text: '✨ रोहन जी (मुंबई) ने ₹149 व्हाट्सएप परामर्श बुक किया' },
     { icon: 'clock', text: '⚡ 30 मिनट में त्वरित रिपोर्ट वितरण की गारंटी' },
+    { icon: 'sparkle', text: '✨ प्रिया जी (वाराणसी) ने ₹99 संपूर्ण जीवन रिपोर्ट प्राप्त की' },
     { icon: 'shield', text: '🛡️ 100% गोपनीय जन्म विवरण व लाहिड़ी अयनांश गणना' },
-    { icon: 'sparkle', text: '✨ पूजा जी (जयपुर) ने ₹99 संपूर्ण जीवन रिपोर्ट प्राप्त की' },
+    { icon: 'sparkle', text: '✨ विकास जी (पुणे) ने Chat Live परामर्श शुरू किया' },
+    { icon: 'sparkle', text: '✨ अंजलि जी (बेंगलुरु) ने ₹89 विवाह अनुकूलता विश्लेषण प्राप्त किया' },
     { icon: 'zap', text: '💎 ₹499 प्रीमियम महाकुंडली: सभी 12 भाव, महादशा व सर्व-उपाय समाधान' },
   ];
 
@@ -60,10 +62,12 @@ export default function LiveActivityTicker() {
     { icon: 'visitors', text: `👥 Today's Total Visitors: ${todayVisitors.toLocaleString('en-IN')}+ seekers` },
     { icon: 'rashi', text: `✨ Rashis & Kundlis Checked Today: ${rashiChecked.toLocaleString('en-IN')}+` },
     { icon: 'star', text: '⭐ 4.9/5 Star Rating • 50,000+ Happy Seekers' },
-    { icon: 'sparkle', text: '✨ Amit K. (New Delhi) booked ₹149 WhatsApp Consultation' },
+    { icon: 'sparkle', text: '✨ Rohan M. (Mumbai) booked ₹149 WhatsApp Consultation' },
     { icon: 'clock', text: '⚡ Guaranteed 30-Minute Rapid Delivery' },
+    { icon: 'sparkle', text: '✨ Priya K. (Varanasi) received ₹99 Comprehensive Report' },
     { icon: 'shield', text: '🛡️ 100% Confidential Data & Lahiri Ayanamsha Accuracy' },
-    { icon: 'sparkle', text: '✨ Pooja S. (Jaipur) received ₹99 Comprehensive Report' },
+    { icon: 'sparkle', text: '✨ Vikas S. (Pune) connected with Chat Live' },
+    { icon: 'sparkle', text: '✨ Anjali R. (Bengaluru) received ₹89 Marriage Compatibility Report' },
     { icon: 'zap', text: '💎 ₹499 Premium Maha-Kundli: All 12 Houses, Dashas & Full Remedies' },
   ];
 

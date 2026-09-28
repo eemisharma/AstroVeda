@@ -9,6 +9,7 @@ import OrderDetailReportView from '@/components/report/OrderDetailReportView';
 import { astrologyProvider } from '@/lib/astrology';
 import { generateHindiReportContent } from '@/lib/ai/hindi-report';
 import { FALLBACK_SERVICES } from '@/lib/constants/services';
+import { orderStore } from '@/lib/orders/order-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,45 +75,14 @@ export default async function OrderReportPage({
     console.warn('Prisma order query failed, using resilient fallback:', dbErr);
   }
 
-  // 2. Resilient Order synthesis to prevent 404 on serverless or simulated orders
+  // 2. Resilient Order retrieval from orderStore or dynamic synthesis
   if (!order) {
-    const rawId = params.orderId;
-    const cleanId = rawId.replace(/[^a-zA-Z0-9]/g, '').slice(-6).toUpperCase() || '789123';
-    const orderNum = rawId.startsWith('ASTRO-') ? rawId : `ASTRO-${cleanId}`;
-
-    const defService = FALLBACK_SERVICES[0]; // Quick Kundli Glance (₹49)
-
-    order = {
-      id: rawId,
-      orderNumber: orderNum,
-      status: 'ANALYSIS_READY',
-      paymentStatus: 'SUCCESS',
-      amount: defService.price,
-      currency: 'INR',
-      createdAt: new Date().toISOString(),
-      userId: user.id,
-      user: {
-        id: user.id,
-        name: user.name || 'प्रिय जातक',
-        email: user.email || 'customer@astroveda.com',
-        phone: user.phone || '+919876543210',
-      },
-      service: {
-        id: defService.id,
-        name: defService.name,
-        slug: defService.slug,
-        price: defService.price,
-      },
-      birthProfile: {
-        dateOfBirth: '1995-08-15',
-        timeOfBirth: '10:30',
-        birthCity: 'नई दिल्ली',
-        birthCountry: 'India',
-        gender: 'Male',
-      },
-      analysis: null,
-      report: null,
-    };
+    const stored = orderStore.getOrder(params.orderId);
+    if (stored) {
+      order = stored;
+    } else {
+      order = orderStore.generateDynamicFallbackOrder(params.orderId, user);
+    }
   }
 
   // 3. Authorization check (resilient: allow owner or admin or guest orders)
@@ -149,9 +119,9 @@ export default async function OrderReportPage({
   if (!chartData) {
     try {
       chartData = await astrologyProvider.generateBirthChart({
-        dateOfBirth: order.birthProfile?.dateOfBirth || '1995-08-15',
-        timeOfBirth: order.birthProfile?.timeOfBirth || '10:30',
-        birthCity: order.birthProfile?.birthCity || 'नई दिल्ली',
+        dateOfBirth: order.birthProfile?.dateOfBirth || new Date().toISOString().split('T')[0],
+        timeOfBirth: order.birthProfile?.timeOfBirth || '12:00',
+        birthCity: order.birthProfile?.birthCity || 'Custom Birthplace',
         birthCountry: order.birthProfile?.birthCountry || 'India',
         latitude: order.birthProfile?.latitude,
         longitude: order.birthProfile?.longitude,

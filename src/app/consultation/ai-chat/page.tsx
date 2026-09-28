@@ -27,6 +27,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/context';
+import { calculateVedicBirthChart } from '@/lib/astrology/vedic-calculator';
 
 interface ChatMessageItem {
   id: string;
@@ -51,17 +52,17 @@ interface ProfileState {
 }
 
 const DEFAULT_DEMO_PROFILE: ProfileState = {
-  fullName: 'राहुल शर्मा',
-  gender: 'Male',
-  birthDate: '1995-08-15',
-  birthTime: '10:30',
-  birthCity: 'नई दिल्ली',
-  lagna: 'मेष (Aries)',
-  moonSign: 'वृश्चिक (Scorpio)',
-  sunSign: 'सिंह (Leo)',
-  nakshatra: 'अनुराधा (Anuradha)',
-  currentDasha: 'राहु - बृहस्पति (Rahu - Jupiter)',
-  problemCategory: 'करियर एवं संपूर्ण वैदिक समाधान',
+  fullName: 'प्रिय जातक',
+  gender: 'Not specified',
+  birthDate: '1998-05-20',
+  birthTime: '08:15',
+  birthCity: 'वाराणसी (Varanasi)',
+  lagna: 'वृषभ (Taurus)',
+  moonSign: 'मीन (Pisces)',
+  sunSign: 'वृषभ (Taurus)',
+  nakshatra: 'रोहिणी (Rohini)',
+  currentDasha: 'बृहस्पति - शनि (Jupiter - Saturn)',
+  problemCategory: 'करियर, विवाह एवं संपूर्ण वैदिक समाधान',
 };
 
 function AIChatContent() {
@@ -138,11 +139,11 @@ function AIChatContent() {
             const loadedProfile: ProfileState = {
               fullName: ord.user?.name || bp?.fullName || DEFAULT_DEMO_PROFILE.fullName,
               gender: bp?.gender || 'Not specified',
-              birthDate: bp?.dateOfBirth || (bp?.birthDate ? new Date(bp.birthDate).toISOString().split('T')[0] : '1995-08-15'),
-              birthTime: bp?.timeOfBirth || bp?.birthTime || '12:00',
-              birthCity: bp?.birthCity || 'India',
-              lagna: astro.ascendant?.sign || 'मेष (Aries)',
-              moonSign: astro.moonSign || 'वृश्चिक (Scorpio)',
+              birthDate: bp?.dateOfBirth || (bp?.birthDate ? new Date(bp.birthDate).toISOString().split('T')[0] : DEFAULT_DEMO_PROFILE.birthDate),
+              birthTime: bp?.timeOfBirth || bp?.birthTime || DEFAULT_DEMO_PROFILE.birthTime,
+              birthCity: bp?.birthCity || DEFAULT_DEMO_PROFILE.birthCity,
+              lagna: astro.ascendant?.sign || DEFAULT_DEMO_PROFILE.lagna,
+              moonSign: astro.moonSign || DEFAULT_DEMO_PROFILE.moonSign,
               sunSign: astro.sunSign || 'सिंह (Leo)',
               nakshatra: astro.nakshatra || 'रोहिणी (Rohini)',
               currentDasha: astro.dasha?.currentMahadasha
@@ -184,7 +185,7 @@ function AIChatContent() {
           fetch(`/api/customer/orders/${latestId}`)
             .then((res) => res.json())
             .then((data) => {
-              if (data.order && (data.order.paymentStatus === 'SUCCESS' || data.order.status === 'PAID')) {
+              if (data.order && (data.order.paymentStatus === 'SUCCESS' || data.order.status === 'PAID' || data.order.status === 'ANALYSIS_READY')) {
                 const isEligible =
                   data.order.service?.slug === 'chat-live' ||
                   data.order.service?.slug === 'ai-chat' ||
@@ -192,8 +193,27 @@ function AIChatContent() {
                   data.order.service?.slug === 'vedic-kundli-whatsapp' ||
                   (data.order.amount && data.order.amount >= 99);
                 if (isEligible) {
+                  const bp = data.order.birthProfile;
+                  const astro = data.order.analysis?.astrologyData || {};
+                  const ordProf: ProfileState = {
+                    fullName: data.order.user?.name || bp?.fullName || DEFAULT_DEMO_PROFILE.fullName,
+                    gender: bp?.gender || 'Not specified',
+                    birthDate: bp?.dateOfBirth || (bp?.birthDate ? new Date(bp.birthDate).toISOString().split('T')[0] : DEFAULT_DEMO_PROFILE.birthDate),
+                    birthTime: bp?.timeOfBirth || bp?.birthTime || DEFAULT_DEMO_PROFILE.birthTime,
+                    birthCity: bp?.birthCity || DEFAULT_DEMO_PROFILE.birthCity,
+                    lagna: astro.ascendant?.sign || DEFAULT_DEMO_PROFILE.lagna,
+                    moonSign: astro.moonSign || DEFAULT_DEMO_PROFILE.moonSign,
+                    sunSign: astro.sunSign || DEFAULT_DEMO_PROFILE.sunSign,
+                    nakshatra: astro.nakshatra || DEFAULT_DEMO_PROFILE.nakshatra,
+                    currentDasha: astro.dasha?.currentMahadasha
+                      ? `${astro.dasha.currentMahadasha} - ${astro.dasha.currentAntardasha || ''}`
+                      : DEFAULT_DEMO_PROFILE.currentDasha,
+                    problemCategory: data.order.service?.name || DEFAULT_DEMO_PROFILE.problemCategory,
+                    orderNumber: data.order.orderNumber,
+                  };
+                  setProfile(ordProf);
                   setIsUnlocked(true);
-                  initializeWelcomeMessage(DEFAULT_DEMO_PROFILE);
+                  initializeWelcomeMessage(ordProf);
                   return;
                 }
               }
@@ -909,12 +929,62 @@ Feel free to ask any question regarding your career, promotions, relationships, 
               </div>
 
               <div>
+                <label className="block text-gray-400 mb-1">{language === 'hi' ? 'जन्म तिथि' : 'Date of Birth'}</label>
+                <input
+                  type="date"
+                  value={profile.birthDate}
+                  onChange={(e) => setProfile({ ...profile, birthDate: e.target.value })}
+                  className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-400 mb-1">{language === 'hi' ? 'जन्म समय' : 'Time of Birth'}</label>
+                <input
+                  type="time"
+                  value={profile.birthTime}
+                  onChange={(e) => setProfile({ ...profile, birthTime: e.target.value })}
+                  className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white"
+                />
+              </div>
+
+              {/* Automatic Astronomical Calculation Trigger */}
+              <div className="sm:col-span-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      const chart = calculateVedicBirthChart({
+                        dateOfBirth: profile.birthDate || '1998-05-20',
+                        timeOfBirth: profile.birthTime || '08:15',
+                        birthCity: profile.birthCity || 'Varanasi',
+                      });
+                      setProfile((prev) => ({
+                        ...prev,
+                        lagna: chart.ascendant.sign,
+                        moonSign: chart.moonSign,
+                        sunSign: chart.sunSign,
+                        nakshatra: chart.nakshatra,
+                        currentDasha: `${chart.dasha.currentMahadasha} - ${chart.dasha.currentAntardasha}`,
+                      }));
+                    } catch (e) {
+                      console.warn('Recalculation error:', e);
+                    }
+                  }}
+                  className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-gold-500/20 via-amber-500/30 to-gold-500/20 border border-gold-400/50 text-gold-300 font-bold hover:brightness-110 flex items-center justify-center gap-1.5 transition-all text-xs"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-gold-400" />
+                  <span>{language === 'hi' ? '🔮 जन्म तिथि व शहर से नई वैदिक कुंडली गणना करें' : '🔮 Auto-Recalculate Vedic Kundli'}</span>
+                </button>
+              </div>
+
+              <div>
                 <label className="block text-gray-400 mb-1">{language === 'hi' ? 'लग्न (Ascendant)' : 'Ascendant (Lagna)'}</label>
                 <input
                   type="text"
                   value={profile.lagna}
                   onChange={(e) => setProfile({ ...profile, lagna: e.target.value })}
-                  className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white"
+                  className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white font-mono"
                 />
               </div>
 
@@ -924,7 +994,7 @@ Feel free to ask any question regarding your career, promotions, relationships, 
                   type="text"
                   value={profile.moonSign}
                   onChange={(e) => setProfile({ ...profile, moonSign: e.target.value })}
-                  className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white"
+                  className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white font-mono"
                 />
               </div>
 
@@ -934,7 +1004,7 @@ Feel free to ask any question regarding your career, promotions, relationships, 
                   type="text"
                   value={profile.nakshatra}
                   onChange={(e) => setProfile({ ...profile, nakshatra: e.target.value })}
-                  className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white"
+                  className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white font-mono"
                 />
               </div>
 
@@ -944,7 +1014,7 @@ Feel free to ask any question regarding your career, promotions, relationships, 
                   type="text"
                   value={profile.currentDasha}
                   onChange={(e) => setProfile({ ...profile, currentDasha: e.target.value })}
-                  className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white"
+                  className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white font-mono"
                 />
               </div>
             </div>

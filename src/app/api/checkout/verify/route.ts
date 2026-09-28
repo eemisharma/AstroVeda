@@ -4,6 +4,7 @@ import prisma from '@/lib/db';
 import { verifyPaymentSignature } from '@/lib/payment/razorpay';
 import { processPaidOrder } from '@/lib/orders/processor';
 import { createToken, TOKEN_NAME } from '@/lib/auth';
+import { orderStore } from '@/lib/orders/order-store';
 
 const verifySchema = z.object({
   orderId: z.string(),
@@ -84,6 +85,14 @@ export async function POST(req: Request) {
       }
     } catch (dbErr) {
       console.warn('Database verification write bypassed in cloud mode:', dbErr);
+    }
+
+    // Always ensure order is marked paid and analysis ready in orderStore
+    const stored = orderStore.getOrder(validated.orderId);
+    if (stored) {
+      stored.status = 'ANALYSIS_READY';
+      stored.paymentStatus = 'SUCCESS';
+      orderStore.saveOrder(stored);
     }
 
     const orderNumber = order?.orderNumber || `ASTRO-${validated.orderId.slice(-6).toUpperCase()}`;
