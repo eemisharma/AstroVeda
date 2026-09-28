@@ -111,28 +111,17 @@ export const orderStore = {
     return list;
   },
 
-  generateDynamicFallbackOrder(orderId: string, user?: any): StoredOrder {
+  generateDynamicFallbackOrder(orderId: string, user?: any, initialProfile?: any): StoredOrder {
     const cleanId = orderId.replace(/[^a-zA-Z0-9]/g, '').slice(-6).toUpperCase() || '789123';
     const orderNumber = orderId.startsWith('ASTRO-') ? orderId : `ASTRO-${cleanId}`;
 
     // Select dynamic fallback service
     const service = FALLBACK_SERVICES[2]; // ₹99 Destiny report
 
-    // Select realistic dynamic birth details based on orderId hash so it is never identical
-    const cities = ['वाराणसी (Varanasi)', 'जयपुर (Jaipur)', 'पुणे (Pune)', 'इंदौर (Indore)', 'लखनऊ (Lucknow)', 'कोलकाता (Kolkata)', 'अहमदाबाद (Ahmedabad)', 'बेंगलुरु (Bengaluru)'];
-    let hash = 0;
-    for (let i = 0; i < orderId.length; i++) hash = (hash << 5) - hash + orderId.charCodeAt(i);
-    const pos = Math.abs(hash);
-
-    const selectedCity = cities[pos % cities.length];
-    const birthYear = 1990 + (pos % 12);
-    const birthMonth = String((pos % 12) + 1).padStart(2, '0');
-    const birthDay = String((pos % 28) + 1).padStart(2, '0');
-    const birthHour = String(6 + (pos % 14)).padStart(2, '0');
-    const birthMin = String(pos % 60).padStart(2, '0');
-
-    const dob = `${birthYear}-${birthMonth}-${birthDay}`;
-    const tob = `${birthHour}:${birthMin}`;
+    // Preserve exact user birth details if provided, never overwrite with random cities
+    const selectedCity = initialProfile?.birthCity || user?.birthCity || 'नई दिल्ली (New Delhi)';
+    const dob = initialProfile?.dateOfBirth || '1995-05-15';
+    const tob = initialProfile?.timeOfBirth || '10:30';
 
     const chartData = calculateVedicBirthChart({
       dateOfBirth: dob,
@@ -156,17 +145,17 @@ export const orderStore = {
         currency: service.currency,
       },
       user: {
-        name: user?.name || 'प्रिय जातक',
+        name: user?.name || initialProfile?.fullName || 'प्रिय जातक',
         email: user?.email || 'customer@astroveda.com',
         phone: user?.phone || '+919876543210',
       },
       birthProfile: {
-        fullName: user?.name || 'प्रिय जातक',
+        fullName: user?.name || initialProfile?.fullName || 'प्रिय जातक',
         dateOfBirth: dob,
         timeOfBirth: tob,
         birthCity: selectedCity,
-        birthCountry: 'India',
-        gender: 'Male',
+        birthCountry: initialProfile?.birthCountry || 'India',
+        gender: initialProfile?.gender || 'Not specified',
       },
       analysis: {
         status: 'COMPLETED',
@@ -175,7 +164,7 @@ export const orderStore = {
       report: {
         status: 'READY',
         content: (aiAnalysisService as any).generateDeterministicReport({
-          customerName: user?.name || 'प्रिय जातक',
+          customerName: user?.name || initialProfile?.fullName || 'प्रिय जातक',
           serviceName: service.name,
           birthDate: dob,
           birthTime: tob,

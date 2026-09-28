@@ -39,8 +39,7 @@ const inter = Inter({
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
   themeColor: '#0b0e17',
 };
 
@@ -75,14 +74,14 @@ export default function RootLayout({
       lang="hi"
       className={`dark ${devanagari.variable} ${rozhaOne.variable} ${inter.variable}`}
     >
-      <body className="min-h-screen flex flex-col bg-navy-950 font-sans text-gray-100 antialiased selection:bg-gold-500 selection:text-navy-950">
+      <body className="min-h-screen flex flex-col bg-navy-950 font-sans text-gray-100 antialiased selection:bg-gold-500 selection:text-navy-950 overflow-x-hidden">
         <LanguageProvider>
           <RouteProgressBar />
           <ScrollProgress />
           <CosmicStarfield />
           <OfflineBanner />
           <Navbar />
-          <main className="flex-1 pb-16 md:pb-0 relative z-10 flex flex-col">
+          <main className="flex-1 pb-16 md:pb-0 relative z-10 flex flex-col w-full max-w-full overflow-x-hidden">
             <PageTransition>{children}</PageTransition>
           </main>
           <Footer />

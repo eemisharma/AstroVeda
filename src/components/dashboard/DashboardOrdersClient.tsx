@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/i18n/context';
 import { FileText, ArrowRight } from 'lucide-react';
@@ -13,11 +14,11 @@ interface OrderItem {
   service: {
     name: string;
   };
-  birthProfile: {
-    dateOfBirth: string;
-    timeOfBirth: string;
-    birthCity: string;
-  };
+  birthProfile?: {
+    dateOfBirth?: string;
+    timeOfBirth?: string;
+    birthCity?: string;
+  } | null;
 }
 
 interface DashboardOrdersClientProps {
@@ -26,6 +27,49 @@ interface DashboardOrdersClientProps {
 
 export default function DashboardOrdersClient({ orders }: DashboardOrdersClientProps) {
   const { t, language } = useLanguage();
+  const [allOrders, setAllOrders] = useState<OrderItem[]>(orders);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('astroveda_customer_orders');
+      if (stored) {
+        const localOrders = JSON.parse(stored);
+        if (Array.isArray(localOrders) && localOrders.length > 0) {
+          setAllOrders((prev) => {
+            const existingIds = new Set(prev.map((o) => o.id));
+            const existingNums = new Set(prev.map((o) => o.orderNumber));
+            const additions = localOrders
+              .filter((lo: any) => lo && !existingIds.has(lo.id) && !existingNums.has(lo.orderNumber))
+              .map((lo: any) => ({
+                id: lo.id || lo.orderNumber,
+                orderNumber: lo.orderNumber,
+                status: lo.status || 'ANALYSIS_READY',
+                amount: lo.amount || lo.service?.price || 49,
+                createdAt: lo.createdAt || new Date().toISOString(),
+                service: {
+                  name: lo.service?.name || 'Vedic Astrology Consultation',
+                },
+                birthProfile: {
+                  dateOfBirth: lo.birthProfile?.dateOfBirth || '',
+                  timeOfBirth: lo.birthProfile?.timeOfBirth || '',
+                  birthCity: lo.birthProfile?.birthCity || '',
+                },
+              }));
+            return [...prev, ...additions];
+          });
+
+          // Background sync local orders to user's account in database
+          fetch('/api/customer/sync-orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orders: localOrders }),
+          }).catch(() => {});
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to merge local customer orders in OrdersList:', e);
+    }
+  }, [orders]);
 
   const getStatusDisplay = (status: string) => {
     if (language === 'hi') {
@@ -54,11 +98,11 @@ export default function DashboardOrdersClient({ orders }: DashboardOrdersClientP
           {t('allOrdersTitle')}
         </h2>
         <span className="text-xs text-gray-400">
-          {formatNumber(orders.length)} {t('totalCount')}
+          {formatNumber(allOrders.length)} {t('totalCount')}
         </span>
       </div>
 
-      {orders.length === 0 ? (
+      {allOrders.length === 0 ? (
         <div className="bg-navy-900 border border-navy-800 rounded-3xl p-8 text-center">
           <p className="text-xs text-gray-400 mb-4">{t('noOrdersYet')}</p>
           <Link
@@ -71,7 +115,7 @@ export default function DashboardOrdersClient({ orders }: DashboardOrdersClientP
         </div>
       ) : (
         <div className="space-y-4">
-          {orders.map((order) => {
+          {allOrders.map((order) => {
             const isReady =
               order.status === 'ANALYSIS_READY' || order.status === 'DELIVERED';
 
@@ -102,7 +146,13 @@ export default function DashboardOrdersClient({ orders }: DashboardOrdersClientP
                     </h3>
 
                     <div className="text-xs text-gray-400">
-                      {t('summaryDob')} {order.birthProfile.dateOfBirth} ({order.birthProfile.timeOfBirth}) • {order.birthProfile.birthCity}
+                      {order.birthProfile?.dateOfBirth ? (
+                        <>
+                          {t('summaryDob')} {order.birthProfile.dateOfBirth} {order.birthProfile.timeOfBirth ? `(${order.birthProfile.timeOfBirth})` : ''} {order.birthProfile.birthCity ? `• ${order.birthProfile.birthCity}` : ''}
+                        </>
+                      ) : (
+                        <span>{language === 'hi' ? 'वैदिक जन्म विवरण पंजीकृत' : 'Vedic birth profile recorded'}</span>
+                      )}
                     </div>
                   </div>
 

@@ -28,6 +28,7 @@ import {
 } from '@/lib/ai/hindi-report';
 import ReportClientActions from '@/components/report/ReportClientActions';
 import CountdownReportTimer from '@/components/report/CountdownReportTimer';
+import { calculateVedicBirthChart } from '@/lib/astrology/vedic-calculator';
 
 interface OrderDetailReportViewProps {
   order: {
@@ -64,35 +65,90 @@ export default function OrderDetailReportView({
   const { t, language } = useLanguage();
   const [reportLang, setReportLang] = useState<'hi' | 'en'>(language);
 
-  // Requirement 2: Timer reset upon returning from Live Chat, and 30-min countdown timer
-  const [timerComplete, setTimerComplete] = useState(false);
-  const [timerKey, setTimerKey] = useState(0);
+  const [effectiveOrder, setEffectiveOrder] = useState(order);
+  const [effectiveChartData, setEffectiveChartData] = useState<ChartData | null>(chartData);
+
+  const [timerComplete, setTimerComplete] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const isBypassed =
+        localStorage.getItem(`astroveda_timer_bypassed_${order.orderNumber}`) === 'true' ||
+        localStorage.getItem(`astroveda_timer_bypassed_${order.id}`) === 'true';
+      if (isBypassed || order.status === 'DELIVERED') return true;
+
+      const startStr =
+        localStorage.getItem(`astroveda_timer_start_${order.orderNumber}`) ||
+        localStorage.getItem(`astroveda_timer_start_${order.id}`);
+      const startTime = startStr ? parseInt(startStr, 10) : new Date(order.createdAt).getTime();
+      const elapsedMinutes = !isNaN(startTime) ? (Date.now() - startTime) / (1000 * 60) : 0;
+      if (elapsedMinutes >= 30) return true;
+    }
+    return false;
+  });
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const resetKey = `astroveda_timer_reset_${order.id}`;
-    const didReturnFromChat = sessionStorage.getItem(resetKey) === 'true';
 
-    if (didReturnFromChat) {
-      sessionStorage.removeItem(resetKey);
-      setTimerComplete(false);
-      setTimerKey((prev) => prev + 1);
-      return;
-    }
+    // Check persistent bypass / elapsed time
+    const isBypassed =
+      localStorage.getItem(`astroveda_timer_bypassed_${order.orderNumber}`) === 'true' ||
+      localStorage.getItem(`astroveda_timer_bypassed_${order.id}`) === 'true';
 
-    const orderCreatedTime = new Date(order.createdAt).getTime();
-    const elapsedMinutes = (Date.now() - orderCreatedTime) / (1000 * 60);
-    if (elapsedMinutes >= 30 || order.status === 'DELIVERED') {
+    const startStr =
+      localStorage.getItem(`astroveda_timer_start_${order.orderNumber}`) ||
+      localStorage.getItem(`astroveda_timer_start_${order.id}`);
+
+    const startTime = startStr ? parseInt(startStr, 10) : new Date(order.createdAt).getTime();
+    const elapsedMinutes = !isNaN(startTime) ? (Date.now() - startTime) / (1000 * 60) : 0;
+
+    if (isBypassed || elapsedMinutes >= 30 || order.status === 'DELIVERED') {
       setTimerComplete(true);
     }
-  }, [order.createdAt, order.id, order.status]);
+
+    // Reconcile user-entered birth data from local storage so fed data is never changed
+    try {
+      const stored = localStorage.getItem('astroveda_customer_orders');
+      if (stored) {
+        const localOrders = JSON.parse(stored);
+        const match = localOrders.find((o: any) => o.id === order.id || o.orderNumber === order.orderNumber);
+        if (match && match.birthProfile) {
+          setEffectiveOrder((prev) => ({
+            ...prev,
+            user: {
+              ...prev.user,
+              name: match.user?.name || match.birthProfile?.fullName || prev.user?.name,
+            },
+            birthProfile: {
+              ...prev.birthProfile,
+              dateOfBirth: match.birthProfile.dateOfBirth || prev.birthProfile.dateOfBirth,
+              timeOfBirth: match.birthProfile.timeOfBirth || prev.birthProfile.timeOfBirth,
+              birthCity: match.birthProfile.birthCity || prev.birthProfile.birthCity,
+            },
+          }));
+
+          // Re-calculate live chart if needed
+          if (!chartData || (match.birthProfile.birthCity && match.birthProfile.birthCity !== order.birthProfile?.birthCity)) {
+            try {
+              const freshChart = calculateVedicBirthChart({
+                dateOfBirth: match.birthProfile.dateOfBirth || order.birthProfile?.dateOfBirth,
+                timeOfBirth: match.birthProfile.timeOfBirth || order.birthProfile?.timeOfBirth,
+                birthCity: match.birthProfile.birthCity || order.birthProfile?.birthCity,
+              });
+              setEffectiveChartData(freshChart);
+            } catch (err) {
+              console.warn('Chart calculation error in view:', err);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Reconciliation error in OrderDetailReportView:', e);
+    }
+  }, [order.id, order.orderNumber, order.createdAt, order.status, chartData, order.birthProfile?.birthCity]);
 
   const isReady = timerComplete;
 
   const handleNavigateToLiveChat = () => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem(`astroveda_timer_reset_${order.id}`, 'true');
-    }
+    // Navigate to live consultation smoothly without resetting the report timer
   };
 
   const getStatusDisplay = (status: string) => {
@@ -114,15 +170,16 @@ export default function OrderDetailReportView({
   // Requirement 1 & 8: Active content resolution in pure Hindi or English
   const activeContent = (() => {
     if (!reportContent) return null;
+    const resolvedChart = effectiveChartData || chartData;
     if (reportLang === 'hi') {
       if (reportContent.hi) {
         return reportContent.hi;
       }
-      if (chartData) {
+      if (resolvedChart) {
         return generateHindiReportContent({
-          customerName: order.user.name,
-          serviceName: order.service.name,
-          chartData,
+          customerName: effectiveOrder.user.name,
+          serviceName: effectiveOrder.service.name,
+          chartData: resolvedChart,
         });
       }
     }
@@ -275,10 +332,10 @@ export default function OrderDetailReportView({
       {/* 30-Minute Live Countdown Timer before report unlocks */}
       {!timerComplete && (
         <CountdownReportTimer
-          key={timerKey}
+          key={order.orderNumber}
           createdAt={order.createdAt}
           orderNumber={order.orderNumber}
-          customerName={order.user?.name}
+          customerName={effectiveOrder.user?.name}
           orderId={order.id}
           onComplete={() => setTimerComplete(true)}
         />
@@ -320,16 +377,16 @@ export default function OrderDetailReportView({
                 </h1>
                 <p className="text-sm text-gray-300 font-medium mt-1 print-dark-text print:text-xs">
                   {reportLang === 'hi' ? 'परामर्श पात्र:' : 'Consultation for:'}{' '}
-                  <strong className="text-white print-dark-text">{order.user.name}</strong>
+                  <strong className="text-white print-dark-text">{effectiveOrder.user.name}</strong>
                 </p>
               </div>
 
               <div className="flex flex-col sm:items-end text-xs text-gray-400 print:text-right print:text-[10px]">
                 <span className="font-mono text-gold-300 font-bold print:text-amber-900">
-                  #{order.orderNumber}
+                  #{effectiveOrder.orderNumber}
                 </span>
                 <span className="print-dark-text">
-                  {new Date(order.createdAt).toLocaleDateString(
+                  {new Date(effectiveOrder.createdAt).toLocaleDateString(
                     reportLang === 'hi' ? 'hi-IN' : 'en-IN',
                     {
                       day: 'numeric',
@@ -347,119 +404,124 @@ export default function OrderDetailReportView({
                 <span className="text-[10px] text-gray-400 uppercase block print-dark-text">
                   {reportLang === 'hi' ? 'जन्म तिथि' : t('dobLabel')}
                 </span>
-                <strong className="text-white print-dark-text">{order.birthProfile.dateOfBirth}</strong>
+                <strong className="text-white print-dark-text">{effectiveOrder.birthProfile.dateOfBirth}</strong>
               </div>
               <div>
                 <span className="text-[10px] text-gray-400 uppercase block print-dark-text">
                   {reportLang === 'hi' ? 'जन्म समय' : t('tobLabel')}
                 </span>
-                <strong className="text-white print-dark-text">{order.birthProfile.timeOfBirth}</strong>
+                <strong className="text-white print-dark-text">{effectiveOrder.birthProfile.timeOfBirth}</strong>
               </div>
               <div>
                 <span className="text-[10px] text-gray-400 uppercase block print-dark-text">
                   {reportLang === 'hi' ? 'जन्म स्थान' : t('cityLabel')}
                 </span>
-                <strong className="text-white print-dark-text">{order.birthProfile.birthCity}</strong>
+                <strong className="text-white print-dark-text">{effectiveOrder.birthProfile.birthCity}</strong>
               </div>
               <div>
                 <span className="text-[10px] text-gray-400 uppercase block print-dark-text">
                   {reportLang === 'hi' ? 'वर्तमान महादशा' : t('currentMahadashaLabel')}
                 </span>
                 <strong className="text-gold-400 font-bold print:text-amber-900">
-                  {reportLang === 'hi' && chartData?.dasha?.currentMahadasha
-                    ? getHindiPlanet(chartData.dasha.currentMahadasha)
-                    : chartData?.dasha?.currentMahadasha || 'Active'}
+                  {reportLang === 'hi' && (effectiveChartData || chartData)?.dasha?.currentMahadasha
+                    ? getHindiPlanet((effectiveChartData || chartData)!.dasha.currentMahadasha)
+                    : (effectiveChartData || chartData)?.dasha?.currentMahadasha || 'Active'}
                 </strong>
               </div>
             </div>
           </div>
 
           {/* Kundli Chart Visual & Key Signatures (Strictly Formatted Without Overlap) */}
-          {chartData && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 print:grid print:grid-cols-2 gap-6 print:gap-4 items-center print:items-start print:break-inside-avoid print:mb-4">
-              {/* Left: Chart SVG */}
-              <div className="lg:col-span-6 print:col-span-1 flex justify-center print:block print:w-[300px] print:mx-auto">
-                <VedicChartSvg chartData={chartData} />
-              </div>
+          {(() => {
+            const activeChart = effectiveChartData || chartData;
+            if (!activeChart) return null;
 
-              {/* Right: Astrological Signatures & Planetary Table */}
-              <div className="lg:col-span-6 print:col-span-1 space-y-3 print:space-y-2">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-2 print-dark-text font-heading print:text-amber-950 print:text-xs">
-                  {reportLang === 'hi' ? 'प्रमुख ज्योतिषीय हस्ताक्षर' : t('astrologicalSignatures')}
-                </h3>
-                <div className="grid grid-cols-2 gap-3 print:gap-2 text-xs">
-                  <div className="p-3.5 print:p-2 rounded-xl bg-navy-900 border border-navy-800 print:bg-white print:border print:border-gray-200 print:rounded-lg">
-                    <span className="text-gray-400 text-[11px] block print-dark-text">
-                      {reportLang === 'hi' ? 'लग्न (Ascendant)' : t('lagnaLabel')}
-                    </span>
-                    <strong className="text-white text-sm print-dark-text print:text-xs">
-                      {reportLang === 'hi'
-                        ? getHindiSign(chartData.ascendant.sign)
-                        : chartData.ascendant.sign}
-                    </strong>
-                    <span className="text-[10px] text-gold-400 block mt-0.5 print:text-amber-900">
-                      {chartData.ascendant.degree}° • {chartData.ascendant.nakshatra}
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 print:p-2 rounded-xl bg-navy-900 border border-navy-800 print:bg-white print:border print:border-gray-200 print:rounded-lg">
-                    <span className="text-gray-400 text-[11px] block print-dark-text">
-                      {reportLang === 'hi' ? 'चंद्र राशि (Moon Sign)' : t('moonSignLabel')}
-                    </span>
-                    <strong className="text-white text-sm print-dark-text print:text-xs">
-                      {reportLang === 'hi' ? getHindiSign(chartData.moonSign) : chartData.moonSign}
-                    </strong>
-                    <span className="text-[10px] text-gold-400 block mt-0.5 print:text-amber-900">
-                      {reportLang === 'hi' ? 'भावनात्मक स्वरूप' : t('emotionalBlueprint')}
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 print:p-2 rounded-xl bg-navy-900 border border-navy-800 print:bg-white print:border print:border-gray-200 print:rounded-lg">
-                    <span className="text-gray-400 text-[11px] block print-dark-text">
-                      {reportLang === 'hi' ? 'जन्म नक्षत्र' : t('nakshatraLabel')}
-                    </span>
-                    <strong className="text-white text-sm print-dark-text print:text-xs">
-                      {chartData.nakshatra}
-                    </strong>
-                    <span className="text-[10px] text-gold-400 block mt-0.5 print:text-amber-900">
-                      पद {chartData.nakshatraPada} • स्वामी: {chartData.nakshatraLord}
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 print:p-2 rounded-xl bg-navy-900 border border-navy-800 print:bg-white print:border print:border-gray-200 print:rounded-lg">
-                    <span className="text-gray-400 text-[11px] block print-dark-text">
-                      {reportLang === 'hi' ? 'सूर्य राशि (Sun Sign)' : t('sunSignLabel')}
-                    </span>
-                    <strong className="text-white text-sm print-dark-text print:text-xs">
-                      {reportLang === 'hi' ? getHindiSign(chartData.sunSign) : chartData.sunSign}
-                    </strong>
-                    <span className="text-[10px] text-gold-400 block mt-0.5 print:text-amber-900">
-                      {reportLang === 'hi' ? 'आत्मबल एवं ऊर्जा' : t('vitalityPurpose')}
-                    </span>
-                  </div>
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-12 print:grid print:grid-cols-2 gap-6 print:gap-4 items-center print:items-start print:break-inside-avoid print:mb-4">
+                {/* Left: Chart SVG */}
+                <div className="lg:col-span-6 print:col-span-1 flex justify-center print:block print:w-[300px] print:mx-auto">
+                  <VedicChartSvg chartData={activeChart} showTable={false} />
                 </div>
 
-                {/* Planetary Positions Quick Table */}
-                <div className="mt-4 print:mt-2 p-4 print:p-2.5 rounded-xl bg-navy-900 border border-navy-800 text-xs overflow-x-auto print:bg-white print:border print:border-gray-200 print:rounded-lg">
-                  <span className="text-[11px] font-bold text-gray-300 uppercase tracking-wider block mb-2 print-dark-text print:text-[10px]">
-                    {reportLang === 'hi' ? 'प्रमुख ग्रह स्थिति सारणी' : t('keyPlacementsLabel')}
-                  </span>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 print:grid-cols-4 gap-2 text-[11px] print:text-[10px]">
-                    {chartData.planets.slice(0, 8).map((p) => (
-                      <div key={p.name} className="flex flex-col text-gray-300 print-dark-text">
-                        <span className="font-semibold text-white print-dark-text">
-                          {reportLang === 'hi' ? p.sanskritName || p.name : p.name}
-                        </span>
-                        <span className="text-[10px] text-gray-400 print:text-gray-600">
-                          {reportLang === 'hi' ? `भाव ${p.house}` : `H${p.house}`} ({p.sign.split(' ')[0]})
-                        </span>
-                      </div>
-                    ))}
+                {/* Right: Astrological Signatures & Planetary Table */}
+                <div className="lg:col-span-6 print:col-span-1 space-y-3 print:space-y-2">
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-2 print-dark-text font-heading print:text-amber-950 print:text-xs">
+                    {reportLang === 'hi' ? 'प्रमुख ज्योतिषीय हस्ताक्षर' : t('astrologicalSignatures')}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3 print:gap-2 text-xs">
+                    <div className="p-3.5 print:p-2 rounded-xl bg-navy-900 border border-navy-800 print:bg-white print:border print:border-gray-200 print:rounded-lg">
+                      <span className="text-gray-400 text-[11px] block print-dark-text">
+                        {reportLang === 'hi' ? 'लग्न (Ascendant)' : t('lagnaLabel')}
+                      </span>
+                      <strong className="text-white text-sm print-dark-text print:text-xs">
+                        {reportLang === 'hi'
+                          ? getHindiSign(activeChart.ascendant.sign)
+                          : activeChart.ascendant.sign}
+                      </strong>
+                      <span className="text-[10px] text-gold-400 block mt-0.5 print:text-amber-900">
+                        {activeChart.ascendant.degree}° • {activeChart.ascendant.nakshatra}
+                      </span>
+                    </div>
+
+                    <div className="p-3.5 print:p-2 rounded-xl bg-navy-900 border border-navy-800 print:bg-white print:border print:border-gray-200 print:rounded-lg">
+                      <span className="text-gray-400 text-[11px] block print-dark-text">
+                        {reportLang === 'hi' ? 'चंद्र राशि (Moon Sign)' : t('moonSignLabel')}
+                      </span>
+                      <strong className="text-white text-sm print-dark-text print:text-xs">
+                        {reportLang === 'hi' ? getHindiSign(activeChart.moonSign) : activeChart.moonSign}
+                      </strong>
+                      <span className="text-[10px] text-gold-400 block mt-0.5 print:text-amber-900">
+                        {reportLang === 'hi' ? 'भावनात्मक स्वरूप' : t('emotionalBlueprint')}
+                      </span>
+                    </div>
+
+                    <div className="p-3.5 print:p-2 rounded-xl bg-navy-900 border border-navy-800 print:bg-white print:border print:border-gray-200 print:rounded-lg">
+                      <span className="text-gray-400 text-[11px] block print-dark-text">
+                        {reportLang === 'hi' ? 'जन्म नक्षत्र' : t('nakshatraLabel')}
+                      </span>
+                      <strong className="text-white text-sm print-dark-text print:text-xs">
+                        {activeChart.nakshatra}
+                      </strong>
+                      <span className="text-[10px] text-gold-400 block mt-0.5 print:text-amber-900">
+                        पद {activeChart.nakshatraPada} • स्वामी: {activeChart.nakshatraLord}
+                      </span>
+                    </div>
+
+                    <div className="p-3.5 print:p-2 rounded-xl bg-navy-900 border border-navy-800 print:bg-white print:border print:border-gray-200 print:rounded-lg">
+                      <span className="text-gray-400 text-[11px] block print-dark-text">
+                        {reportLang === 'hi' ? 'सूर्य राशि (Sun Sign)' : t('sunSignLabel')}
+                      </span>
+                      <strong className="text-white text-sm print-dark-text print:text-xs">
+                        {reportLang === 'hi' ? getHindiSign(activeChart.sunSign) : activeChart.sunSign}
+                      </strong>
+                      <span className="text-[10px] text-gold-400 block mt-0.5 print:text-amber-900">
+                        {reportLang === 'hi' ? 'आत्मबल एवं ऊर्जा' : t('vitalityPurpose')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Planetary Positions Quick Table */}
+                  <div className="mt-4 print:mt-2 p-4 print:p-2.5 rounded-xl bg-navy-900 border border-navy-800 text-xs overflow-x-auto print:bg-white print:border print:border-gray-200 print:rounded-lg">
+                    <span className="text-[11px] font-bold text-gray-300 uppercase tracking-wider block mb-2 print-dark-text print:text-[10px]">
+                      {reportLang === 'hi' ? 'प्रमुख ग्रह स्थिति सारणी' : t('keyPlacementsLabel')}
+                    </span>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 print:grid-cols-4 gap-2 text-[11px] print:text-[10px]">
+                      {activeChart.planets.slice(0, 8).map((p) => (
+                        <div key={p.name} className="flex flex-col text-gray-300 print-dark-text">
+                          <span className="font-semibold text-white print-dark-text">
+                            {reportLang === 'hi' ? p.sanskritName || p.name : p.name}
+                          </span>
+                          <span className="text-[10px] text-gray-400 print:text-gray-600">
+                            {reportLang === 'hi' ? `भाव ${p.house}` : `H${p.house}`} ({p.sign.split(' ')[0]})
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* 10 REPORT SECTIONS */}
 

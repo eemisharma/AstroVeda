@@ -7,7 +7,13 @@ export default async function DashboardOverviewPage() {
   if (!user) return null;
 
   const orders = await prisma.order.findMany({
-    where: { userId: user.id },
+    where: {
+      OR: [
+        { userId: user.id },
+        { user: { email: user.email } },
+        ...(user.phone ? [{ user: { phone: user.phone } }] : []),
+      ],
+    },
     include: {
       service: {
         select: {

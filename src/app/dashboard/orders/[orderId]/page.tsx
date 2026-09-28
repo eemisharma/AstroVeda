@@ -25,10 +25,15 @@ export default async function OrderReportPage({
 
   let order: any = null;
 
-  // 1. Attempt fetching order from Prisma database
+  // 1. Attempt fetching order from Prisma database by id OR orderNumber
   try {
-    order = await prisma.order.findUnique({
-      where: { id: params.orderId },
+    order = await prisma.order.findFirst({
+      where: {
+        OR: [
+          { id: params.orderId },
+          { orderNumber: params.orderId },
+        ],
+      },
       include: {
         user: {
           select: {
@@ -71,6 +76,18 @@ export default async function OrderReportPage({
         },
       },
     });
+
+    // If order was created under a guest session but matches user's email, link to current user
+    if (order && user && order.userId !== user.id) {
+      if (order.user?.email?.toLowerCase() === user.email?.toLowerCase() || !order.userId || order.userId === 'guest') {
+        try {
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { userId: user.id },
+          });
+        } catch {}
+      }
+    }
   } catch (dbErr) {
     console.warn('Prisma order query failed, using resilient fallback:', dbErr);
   }
@@ -85,8 +102,16 @@ export default async function OrderReportPage({
     }
   }
 
-  // 3. Authorization check (resilient: allow owner or admin or guest orders)
-  if (order.userId && order.userId !== user.id && user.role !== 'ADMIN' && order.userId !== 'guest') {
+  // 3. Authorization check (resilient: allow owner, matching email/phone, admin, or guest orders)
+  const isOwner =
+    !order.userId ||
+    order.userId === 'guest' ||
+    order.userId === user.id ||
+    order.user?.email?.toLowerCase() === user.email?.toLowerCase() ||
+    (Boolean(user.phone) && Boolean(order.user?.phone) && order.user?.phone?.replace(/\D/g, '').endsWith(user.phone.replace(/\D/g, '').slice(-10))) ||
+    user.role === 'ADMIN';
+
+  if (!isOwner) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center p-4">
         <div className="bg-navy-900 border border-red-500/30 rounded-3xl p-6 text-center max-w-md">

@@ -12,9 +12,16 @@ export async function GET() {
 
   try {
     const orders = await prisma.order.findMany({
-      where: { userId: user.id },
+      where: {
+        OR: [
+          { userId: user.id },
+          { user: { email: user.email } },
+          ...(user.phone ? [{ user: { phone: user.phone } }] : []),
+        ],
+      },
       include: {
         service: true,
+        birthProfile: true,
         report: {
           select: { id: true, title: true, status: true, updatedAt: true },
         },

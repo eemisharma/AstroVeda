@@ -23,13 +23,70 @@ export default function CountdownReportTimer({
 }: CountdownReportTimerProps) {
   const { t, language } = useLanguage();
   const DURATION_SECONDS = 30 * 60; // 30 minutes
+  const TIMER_START_KEY = `astroveda_timer_start_${orderNumber}`;
+  const TIMER_BYPASS_KEY = `astroveda_timer_bypassed_${orderNumber}`;
 
-  // Requirement 2: Whenever the user navigates to live chat and returns to this page,
-  // the timer resets and starts from the beginning (30:00 minutes).
-  const [remainingSeconds, setRemainingSeconds] = useState<number>(DURATION_SECONDS);
-  const [isBypassed, setIsBypassed] = useState(false);
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      if (localStorage.getItem(TIMER_BYPASS_KEY) === 'true') {
+        return 0;
+      }
+      const savedStart = localStorage.getItem(TIMER_START_KEY);
+      if (savedStart) {
+        const startTime = parseInt(savedStart, 10);
+        if (!isNaN(startTime)) {
+          const elapsed = Math.floor((Date.now() - startTime) / 1000);
+          return Math.max(0, DURATION_SECONDS - elapsed);
+        }
+      } else if (createdAt) {
+        const orderCreatedTime = new Date(createdAt).getTime();
+        if (!isNaN(orderCreatedTime) && orderCreatedTime > 0) {
+          localStorage.setItem(TIMER_START_KEY, String(orderCreatedTime));
+          const elapsed = Math.floor((Date.now() - orderCreatedTime) / 1000);
+          return Math.max(0, DURATION_SECONDS - elapsed);
+        }
+      }
+      localStorage.setItem(TIMER_START_KEY, String(Date.now()));
+    }
+    return DURATION_SECONDS;
+  });
+
+  const [isBypassed, setIsBypassed] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(TIMER_BYPASS_KEY) === 'true';
+    }
+    return false;
+  });
   const [notificationSent, setNotificationSent] = useState(false);
   const [showInAppPush, setShowInAppPush] = useState(false);
+
+  // Sync remaining seconds on mount and initialize persistent start time
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (localStorage.getItem(TIMER_BYPASS_KEY) === 'true') {
+      setIsBypassed(true);
+      setRemainingSeconds(0);
+      return;
+    }
+
+    let startTime: number;
+    const savedStart = localStorage.getItem(TIMER_START_KEY);
+    if (savedStart) {
+      startTime = parseInt(savedStart, 10);
+    } else if (createdAt) {
+      const parsed = new Date(createdAt).getTime();
+      startTime = !isNaN(parsed) && parsed > 0 ? parsed : Date.now();
+      localStorage.setItem(TIMER_START_KEY, String(startTime));
+    } else {
+      startTime = Date.now();
+      localStorage.setItem(TIMER_START_KEY, String(startTime));
+    }
+
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const rem = Math.max(0, DURATION_SECONDS - elapsed);
+    setRemainingSeconds(rem);
+  }, [orderNumber, createdAt, DURATION_SECONDS]);
 
   // Request browser notification permission on mount
   useEffect(() => {
@@ -78,19 +135,33 @@ export default function CountdownReportTimer({
     }
 
     const interval = setInterval(() => {
-      setRemainingSeconds((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          triggerPushNotifications();
-          if (onComplete) onComplete();
-          return 0;
-        }
-        return prev - 1;
-      });
+      if (typeof window === 'undefined') return;
+      const savedStart = localStorage.getItem(TIMER_START_KEY);
+      const startTime = savedStart ? parseInt(savedStart, 10) : Date.now();
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const newRemaining = Math.max(0, DURATION_SECONDS - elapsed);
+
+      setRemainingSeconds(newRemaining);
+
+      if (newRemaining <= 0) {
+        clearInterval(interval);
+        triggerPushNotifications();
+        if (onComplete) onComplete();
+      }
     }, 1000);
 
     return () => clearInterval(interval);
   }, [remainingSeconds, isBypassed, onComplete]);
+
+  const handleBypass = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(TIMER_BYPASS_KEY, 'true');
+    }
+    setIsBypassed(true);
+    setRemainingSeconds(0);
+    triggerPushNotifications();
+    if (onComplete) onComplete();
+  };
 
   const minutes = Math.floor(remainingSeconds / 60);
   const seconds = remainingSeconds % 60;
@@ -210,10 +281,10 @@ export default function CountdownReportTimer({
       </div>
 
       {/* Countdown Digits */}
-      <div className="flex items-center justify-center gap-3 sm:gap-4 my-4">
+      <div className="flex items-center justify-center gap-2.5 sm:gap-4 my-4 max-w-full">
         {/* Minutes Box */}
         <div className="flex flex-col items-center">
-          <div className="w-20 sm:w-24 h-20 sm:h-24 rounded-2xl bg-navy-950/90 border border-gold-500/50 flex items-center justify-center text-3xl sm:text-4xl font-black text-gold-300 font-mono shadow-gold-glow">
+          <div className="w-16 sm:w-24 h-16 sm:h-24 rounded-2xl bg-navy-950/90 border border-gold-500/50 flex items-center justify-center text-2xl sm:text-4xl font-black text-gold-300 font-mono shadow-gold-glow">
             {formatDevanagari(minutes)}
           </div>
           <span className="text-[10px] uppercase font-bold text-gray-400 mt-1.5 tracking-wider">
@@ -221,11 +292,11 @@ export default function CountdownReportTimer({
           </span>
         </div>
 
-        <div className="text-3xl font-black text-gold-400 pb-5 animate-pulse">:</div>
+        <div className="text-2xl sm:text-3xl font-black text-gold-400 pb-5 animate-pulse">:</div>
 
         {/* Seconds Box */}
         <div className="flex flex-col items-center">
-          <div className="w-20 sm:w-24 h-20 sm:h-24 rounded-2xl bg-navy-950/90 border border-gold-500/50 flex items-center justify-center text-3xl sm:text-4xl font-black text-gold-300 font-mono shadow-gold-glow">
+          <div className="w-16 sm:w-24 h-16 sm:h-24 rounded-2xl bg-navy-950/90 border border-gold-500/50 flex items-center justify-center text-2xl sm:text-4xl font-black text-gold-300 font-mono shadow-gold-glow">
             {formatDevanagari(seconds)}
           </div>
           <span className="text-[10px] uppercase font-bold text-gray-400 mt-1.5 tracking-wider">
@@ -288,11 +359,7 @@ export default function CountdownReportTimer({
       {/* Dev Bypass Button */}
       <div className="pt-2">
         <button
-          onClick={() => {
-            setIsBypassed(true);
-            triggerPushNotifications();
-            if (onComplete) onComplete();
-          }}
+          onClick={handleBypass}
           type="button"
           className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 hover:text-gold-400 transition-colors underline"
         >

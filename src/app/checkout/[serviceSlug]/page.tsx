@@ -342,19 +342,41 @@ export default function CheckoutPage() {
           amount: activeService.price,
           createdAt: new Date().toISOString(),
           service: {
+            id: activeService.id,
             name: activeService.name,
             slug: activeService.slug,
+            price: activeService.price,
+          },
+          user: {
+            name: formData.name.trim(),
+            email: formData.email.trim(),
+            phone: formData.phone.trim(),
           },
           birthProfile: {
+            fullName: formData.name.trim(),
             dateOfBirth: formData.dateOfBirth,
             timeOfBirth: formData.timeOfBirth,
             birthCity: formData.birthCity,
+            birthCountry: formData.birthCountry || 'India',
+            gender: formData.gender,
+            currentCity: formData.currentCity,
           },
         };
         localStorage.setItem(
           'astroveda_customer_orders',
           JSON.stringify([newOrder, ...existing.filter((o: any) => o.id !== paymentOrder.orderId)])
         );
+
+        // Pre-initialize timer timestamp so it starts counting down smoothly without resets
+        localStorage.setItem(`astroveda_timer_start_${paymentOrder.orderNumber}`, String(Date.now()));
+        localStorage.setItem(`astroveda_timer_start_${paymentOrder.orderId}`, String(Date.now()));
+
+        // Trigger immediate background sync to link order with logged in user account
+        fetch('/api/customer/sync-orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orders: [newOrder] }),
+        }).catch(() => {});
 
         if (activeService.price >= 99 || ['chat-live', 'ai-chat', 'comprehensive-destiny', 'vedic-kundli-whatsapp'].includes(activeService.slug)) {
           const unlocked = JSON.parse(localStorage.getItem('astroveda_unlocked_chat_orders') || '[]');

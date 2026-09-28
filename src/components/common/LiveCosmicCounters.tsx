@@ -63,7 +63,7 @@ export default function LiveCosmicCounters({
   if (variant === 'pill') {
     return (
       <div
-        className={`inline-flex flex-wrap items-center justify-center gap-3 sm:gap-6 px-4 py-2 rounded-2xl bg-navy-900/90 border border-gold-500/30 backdrop-blur-md shadow-gold-glow ${className}`}
+        className={`inline-flex flex-wrap items-center justify-center gap-2.5 sm:gap-6 px-3 sm:px-4 py-2 rounded-2xl bg-navy-900/90 border border-gold-500/30 backdrop-blur-md shadow-gold-glow max-w-full overflow-hidden ${className}`}
       >
         {/* Live Fluctuating Counter */}
         <div className="flex items-center gap-2">

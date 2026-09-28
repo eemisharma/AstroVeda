@@ -37,7 +37,6 @@ export default function DashboardOverviewClient({ orders }: DashboardOverviewCli
   const { t, language } = useLanguage();
   const [allOrders, setAllOrders] = useState<OrderItem[]>(orders);
 
-  // Requirement 1: Once paid for any service, ensure it is permanently accessible in dashboard
   useEffect(() => {
     try {
       const stored = localStorage.getItem('astroveda_customer_orders');
@@ -52,6 +51,13 @@ export default function DashboardOverviewClient({ orders }: DashboardOverviewCli
             );
             return [...prev, ...additions];
           });
+
+          // Background sync local orders to user's account in database
+          fetch('/api/customer/sync-orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orders: localOrders }),
+          }).catch(() => {});
         }
       }
     } catch (e) {

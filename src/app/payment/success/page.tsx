@@ -36,9 +36,25 @@ function PaymentSuccessContent() {
                 window.open(waUrl, '_blank');
               }, 1200);
             }
+          } else {
+            try {
+              const localOrders = JSON.parse(localStorage.getItem('astroveda_customer_orders') || '[]');
+              const matched = localOrders.find((o: any) => o.id === orderId || o.orderNumber === orderId);
+              if (matched) {
+                setOrder(matched);
+              }
+            } catch {}
           }
         })
-        .catch(() => {})
+        .catch(() => {
+          try {
+            const localOrders = JSON.parse(localStorage.getItem('astroveda_customer_orders') || '[]');
+            const matched = localOrders.find((o: any) => o.id === orderId || o.orderNumber === orderId);
+            if (matched) {
+              setOrder(matched);
+            }
+          } catch {}
+        })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
@@ -155,6 +171,9 @@ function PaymentSuccessContent() {
               <CountdownReportTimer
                 createdAt={order.createdAt}
                 orderNumber={order.orderNumber}
+                customerName={order.user?.name || order.birthProfile?.fullName}
+                customerPhone={order.user?.phone || order.phone}
+                orderId={order.id || orderId || undefined}
                 onComplete={() => {}}
               />
             </div>

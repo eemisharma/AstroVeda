@@ -14,10 +14,15 @@ export async function GET(
   try {
     const user = await getSessionUser();
 
-    // 1. Try to fetch real order from Prisma database
+    // 1. Try to fetch real order from Prisma database by id OR orderNumber
     try {
-      const order = await prisma.order.findUnique({
-        where: { id: params.orderId },
+      const order = await prisma.order.findFirst({
+        where: {
+          OR: [
+            { id: params.orderId },
+            { orderNumber: params.orderId },
+          ],
+        },
         include: {
           service: true,
           birthProfile: true,
@@ -29,8 +34,28 @@ export async function GET(
       });
 
       if (order) {
-        // If logged in as someone else who is not admin, block
-        if (user && order.userId !== user.id && user.role !== 'ADMIN') {
+        // Link guest order to user if matching
+        if (user && (!order.userId || order.userId === 'guest' || order.user?.email?.toLowerCase() === user.email?.toLowerCase())) {
+          if (order.userId !== user.id) {
+            try {
+              await prisma.order.update({
+                where: { id: order.id },
+                data: { userId: user.id },
+              });
+            } catch {}
+          }
+        }
+
+        // Check ownership
+        const isOwner =
+          !user ||
+          !order.userId ||
+          order.userId === 'guest' ||
+          order.userId === user.id ||
+          order.user?.email?.toLowerCase() === user.email?.toLowerCase() ||
+          user.role === 'ADMIN';
+
+        if (!isOwner) {
           return NextResponse.json(
             { error: 'Forbidden: You do not have access to this astrology consultation' },
             { status: 403 }
