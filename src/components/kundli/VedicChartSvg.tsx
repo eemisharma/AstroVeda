@@ -134,6 +134,7 @@ export default function VedicChartSvg({ chartData, className = '', showTable = t
         <div className="relative aspect-square w-full">
           <svg
             viewBox="0 0 400 400"
+            preserveAspectRatio="xMidYMid meet"
             className="w-full h-full text-gold-400 print:text-amber-950"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"

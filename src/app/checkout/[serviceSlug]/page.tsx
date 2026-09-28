@@ -511,43 +511,43 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen py-8 px-4 sm:px-6 max-w-2xl mx-auto">
       {/* Requirement 3: Sequential 3-Step Checkout Flow */}
-      <div className="flex items-center justify-between mb-8 px-2">
+      <div className="flex items-center justify-between mb-8 px-1 sm:px-2">
         {/* Step 1: Sign Up / Sign In */}
-        <div className="flex items-center gap-2">
-          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
             step >= 1 ? 'bg-gold-500 text-navy-950 shadow-gold-glow' : 'bg-navy-800 text-gray-500'
           }`}>
             1
           </div>
-          <span className={`text-xs font-semibold ${step >= 1 ? 'text-white' : 'text-gray-500'}`}>
-            {language === 'hi' ? '1. साइन अप / लॉगिन' : '1. Sign Up / Sign In'}
+          <span className={`text-xs font-semibold ${step >= 1 ? 'text-white' : 'text-gray-500'} ${step === 1 ? 'inline' : 'hidden sm:inline'}`}>
+            {language === 'hi' ? '1. लॉगिन' : '1. Sign In'}
           </span>
         </div>
 
-        <div className={`flex-1 h-[2px] mx-3 ${step >= 2 ? 'bg-gold-500/80' : 'bg-navy-800'}`} />
+        <div className={`flex-1 h-[2px] mx-2 sm:mx-3 ${step >= 2 ? 'bg-gold-500/80' : 'bg-navy-800'}`} />
 
         {/* Step 2: Birth Details */}
-        <div className="flex items-center gap-2">
-          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
             step >= 2 ? 'bg-gold-500 text-navy-950 shadow-gold-glow' : 'bg-navy-800 text-gray-500'
           }`}>
             2
           </div>
-          <span className={`text-xs font-semibold ${step >= 2 ? 'text-white' : 'text-gray-500'}`}>
-            {language === 'hi' ? '2. जन्म विवरण' : '2. Birth Details'}
+          <span className={`text-xs font-semibold ${step >= 2 ? 'text-white' : 'text-gray-500'} ${step === 2 ? 'inline' : 'hidden sm:inline'}`}>
+            {language === 'hi' ? '2. विवरण' : '2. Details'}
           </span>
         </div>
 
-        <div className={`flex-1 h-[2px] mx-3 ${step === 3 ? 'bg-gold-500/80' : 'bg-navy-800'}`} />
+        <div className={`flex-1 h-[2px] mx-2 sm:mx-3 ${step === 3 ? 'bg-gold-500/80' : 'bg-navy-800'}`} />
 
         {/* Step 3: Payment */}
-        <div className="flex items-center gap-2">
-          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
             step === 3 ? 'bg-gold-500 text-navy-950 shadow-gold-glow' : 'bg-navy-800 text-gray-500'
           }`}>
             3
           </div>
-          <span className={`text-xs font-semibold ${step === 3 ? 'text-white' : 'text-gray-500'}`}>
+          <span className={`text-xs font-semibold ${step === 3 ? 'text-white' : 'text-gray-500'} ${step === 3 ? 'inline' : 'hidden sm:inline'}`}>
             {language === 'hi' ? '3. भुगतान' : '3. Payment'}
           </span>
         </div>

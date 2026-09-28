@@ -320,7 +320,7 @@ export default function HomeView({ services }: HomeViewProps) {
                           setSelectedServiceSlug(s.slug);
                           setDropdownOpen(false);
                         }}
-                        className={`p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                        className={`p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                           isSelected
                             ? 'bg-gold-500/20 border-gold-500 text-white shadow-gold-glow'
                             : 'bg-[#0f1738] border-navy-700/80 hover:border-gold-500/50 hover:bg-[#15204c] text-gray-200'
@@ -329,7 +329,7 @@ export default function HomeView({ services }: HomeViewProps) {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span
-                              className={`text-xs px-2.5 py-0.5 rounded-lg font-black font-mono ${
+                              className={`text-xs px-2.5 py-0.5 rounded-lg font-black font-mono shrink-0 ${
                                 isPremium
                                   ? 'bg-amber-500 text-navy-950'
                                   : isWhatsApp
@@ -339,16 +339,16 @@ export default function HomeView({ services }: HomeViewProps) {
                             >
                               ₹{s.price}
                             </span>
-                            <h4 className="text-sm font-bold text-white truncate font-heading">
+                            <h4 className="text-sm font-bold text-white font-heading">
                               {getServiceName(s)}
                             </h4>
                             {isPremium && (
-                              <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-semibold">
+                              <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-semibold shrink-0">
                                 {language === 'hi' ? 'प्रीमियम • आगामी' : 'Premium • Coming Soon'}
                               </span>
                             )}
                             {isWhatsApp && (
-                              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded font-semibold">
+                              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded font-semibold shrink-0">
                                 {language === 'hi' ? 'व्हाट्सएप चैट शामिल' : 'WhatsApp Chat Included'}
                               </span>
                             )}
@@ -357,21 +357,21 @@ export default function HomeView({ services }: HomeViewProps) {
                             {getServiceDesc(s)}
                           </p>
                           <div className="flex items-center gap-2 mt-1.5 text-[11px] text-gray-400">
-                            <Clock className="w-3 h-3 text-gold-400" />
+                            <Clock className="w-3 h-3 text-gold-400 shrink-0" />
                             <span>
                               {t('serviceDeliveryLabel')} {getServiceDelivery(s)}
                             </span>
                           </div>
                         </div>
 
-                        <div className="shrink-0 flex items-center gap-2">
+                        <div className="shrink-0 flex items-center justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-navy-800/80 w-full sm:w-auto">
                           {isSelected ? (
-                            <span className="px-2.5 py-1 rounded-xl bg-gold-500 text-navy-950 text-xs font-bold flex items-center gap-1">
+                            <span className="flex-1 sm:flex-initial text-center px-3 py-1.5 rounded-xl bg-gold-500 text-navy-950 text-xs font-bold flex items-center justify-center gap-1">
                               <Check className="w-3.5 h-3.5 stroke-[3]" />
                               <span>{language === 'hi' ? 'चयनित' : 'Selected'}</span>
                             </span>
                           ) : (
-                            <span className="px-2.5 py-1 rounded-xl bg-navy-800 text-gold-300 border border-navy-700 text-xs font-semibold hover:bg-gold-500 hover:text-navy-950 transition-colors">
+                            <span className="flex-1 sm:flex-initial text-center px-3 py-1.5 rounded-xl bg-navy-800 text-gold-300 border border-navy-700 text-xs font-semibold hover:bg-gold-500 hover:text-navy-950 transition-colors">
                               {language === 'hi' ? 'चुनें' : 'Select'}
                             </span>
                           )}
@@ -385,7 +385,7 @@ export default function HomeView({ services }: HomeViewProps) {
                                 setDropdownOpen(false);
                                 setCareDrawerOpen(true);
                               }}
-                              className="p-2 rounded-xl bg-navy-800 hover:bg-amber-500 hover:text-navy-950 text-amber-300 border border-amber-500/30 transition-all text-xs font-bold"
+                              className="p-2 rounded-xl bg-navy-800 hover:bg-amber-500 hover:text-navy-950 text-amber-300 border border-amber-500/30 transition-all text-xs font-bold shrink-0"
                               title={language === 'hi' ? 'विवरण देखें' : 'View details'}
                             >
                               <ArrowRight className="w-3.5 h-3.5" />
@@ -397,7 +397,7 @@ export default function HomeView({ services }: HomeViewProps) {
                                 e.stopPropagation();
                                 setDropdownOpen(false);
                               }}
-                              className="p-2 rounded-xl bg-gold-500/20 hover:bg-gold-500 hover:text-navy-950 text-gold-300 border border-gold-500/40 transition-all"
+                              className="p-2 rounded-xl bg-gold-500/20 hover:bg-gold-500 hover:text-navy-950 text-gold-300 border border-gold-500/40 transition-all shrink-0"
                               title={language === 'hi' ? 'सीधे चेकआउट करें' : 'Proceed directly'}
                             >
                               <ArrowRight className="w-3.5 h-3.5" />

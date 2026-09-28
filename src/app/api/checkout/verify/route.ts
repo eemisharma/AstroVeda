@@ -34,9 +34,14 @@ export async function POST(req: Request) {
 
     let order: any = null;
     try {
-      order = await prisma.order.findUnique({
-        where: { id: validated.orderId },
-        include: { user: true, service: true, payment: true },
+      order = await prisma.order.findFirst({
+        where: {
+          OR: [
+            { id: validated.orderId },
+            { orderNumber: validated.orderId },
+          ],
+        },
+        include: { user: true, service: true, payment: true, birthProfile: true },
       });
 
       if (order) {

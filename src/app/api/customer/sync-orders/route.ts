@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
 import { orderStore } from '@/lib/orders/order-store';
+import { FALLBACK_SERVICES } from '@/lib/constants/services';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,7 +62,68 @@ export async function POST(req: Request) {
             }
           }
         } else {
-          // If order is in orderStore, update its owner
+          // If order does not exist in database, persist it so it reflects in the user's dashboard and orders list permanently
+          try {
+            const targetSlug = lo.service?.slug || 'comprehensive-destiny';
+            let service = await prisma.service.findFirst({
+              where: {
+                OR: [
+                  { slug: targetSlug },
+                  ...(lo.service?.name ? [{ name: lo.service.name }] : []),
+                ],
+              },
+            });
+
+            if (!service) {
+              const defaultService =
+                FALLBACK_SERVICES.find((s) => s.slug === targetSlug) || FALLBACK_SERVICES[2];
+              service = await prisma.service.upsert({
+                where: { slug: defaultService.slug },
+                update: {},
+                create: {
+                  name: defaultService.name,
+                  slug: defaultService.slug,
+                  description: defaultService.description,
+                  price: defaultService.price,
+                  currency: defaultService.currency,
+                  deliveryTime: defaultService.deliveryTime,
+                  active: true,
+                },
+              });
+            }
+
+            const bp = await prisma.birthProfile.create({
+              data: {
+                userId: user.id,
+                dateOfBirth: lo.birthProfile?.dateOfBirth || '1995-05-15',
+                timeOfBirth: lo.birthProfile?.timeOfBirth || '12:00',
+                birthCity: lo.birthProfile?.birthCity || 'New Delhi',
+                birthCountry: lo.birthProfile?.birthCountry || 'India',
+                gender: lo.birthProfile?.gender || null,
+                currentCity: lo.birthProfile?.currentCity || null,
+                timezone: 'Asia/Kolkata',
+              },
+            });
+
+            await prisma.order.create({
+              data: {
+                id: lo.id || undefined,
+                orderNumber: lo.orderNumber || `ASTRO-${Date.now().toString().slice(-6)}`,
+                userId: user.id,
+                serviceId: service.id,
+                birthProfileId: bp.id,
+                amount: lo.amount || service.price,
+                currency: 'INR',
+                status: lo.status || 'ANALYSIS_READY',
+                paymentStatus: 'SUCCESS',
+              },
+            });
+            syncedCount++;
+          } catch (createErr) {
+            console.warn('Failed to insert missing order in sync:', createErr);
+          }
+
+          // Also update in runtime orderStore
           const stored = orderStore.getOrder(orderIdentifier);
           if (stored) {
             stored.user = {
@@ -71,7 +133,6 @@ export async function POST(req: Request) {
               phone: user.phone,
             };
             orderStore.saveOrder(stored);
-            syncedCount++;
           }
         }
       } catch (err) {

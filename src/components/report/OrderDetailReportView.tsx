@@ -23,6 +23,7 @@ import { ChartData } from '@/lib/astrology/types';
 import { AstrologyReportContent } from '@/lib/ai/types';
 import {
   generateHindiReportContent,
+  generateEnglishReportContent,
   getHindiSign,
   getHindiPlanet,
 } from '@/lib/ai/hindi-report';
@@ -167,21 +168,29 @@ export default function OrderDetailReportView({
     return status;
   };
 
-  // Requirement 1 & 8: Active content resolution in pure Hindi or English
+  // Requirement 1 & 8: Active content resolution in pure Hindi or English with 100% chart and data fidelity
   const activeContent = (() => {
-    if (!reportContent) return null;
     const resolvedChart = effectiveChartData || chartData;
-    if (reportLang === 'hi') {
-      if (reportContent.hi) {
-        return reportContent.hi;
-      }
-      if (resolvedChart) {
+    const customerName = effectiveOrder.user?.name || (effectiveOrder as any).birthProfile?.fullName || 'Seeker';
+
+    if (resolvedChart) {
+      if (reportLang === 'hi') {
         return generateHindiReportContent({
-          customerName: effectiveOrder.user.name,
+          customerName,
+          serviceName: effectiveOrder.service.name,
+          chartData: resolvedChart,
+        });
+      } else {
+        return generateEnglishReportContent({
+          customerName,
           serviceName: effectiveOrder.service.name,
           chartData: resolvedChart,
         });
       }
+    }
+
+    if (reportLang === 'hi' && reportContent?.hi) {
+      return reportContent.hi;
     }
     return reportContent;
   })();

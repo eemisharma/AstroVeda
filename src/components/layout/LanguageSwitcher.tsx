@@ -28,10 +28,12 @@ export default function LanguageSwitcher({ className = '', compact = false }: La
       aria-label="Change Language"
     >
       <Globe className="w-3.5 h-3.5 text-gold-400 shrink-0" />
-      <span>{language === 'hi' ? '🇮🇳 हिन्दी' : '🇬🇧 English'}</span>
-      <span className="text-[10px] text-gray-400 ml-0.5 font-normal">
-        {language === 'hi' ? 'EN' : 'हिन्दी'}
-      </span>
+      <span>{compact ? (language === 'hi' ? 'हिन्दी' : 'EN') : (language === 'hi' ? '🇮🇳 हिन्दी' : '🇬🇧 English')}</span>
+      {!compact && (
+        <span className="text-[10px] text-gray-400 ml-0.5 font-normal">
+          {language === 'hi' ? 'EN' : 'हिन्दी'}
+        </span>
+      )}
     </button>
   );
 }
